@@ -56,6 +56,7 @@ cc.game.onStart = function(){
     //开始适配
     GC.init(designWidth,designHeight);
     console.log(GC.w+" "+GC.h);
+    cc.director.setContentScaleFactor(1/GC.wscale);
     //load resources
     cc.LoaderScene.preload(g_resources, function () {
         cc.director.setProjection(cc.Director.PROJECTION_2D);

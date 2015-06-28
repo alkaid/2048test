@@ -12,7 +12,7 @@ var GPTouchLayer = cc.Layer.extend({
 
         this.startTiles = GC.startTiles;
 
-        this.gridX = 10;
+        //this.gridX = 10;
         this.gridY = GC.h - 140;
 
         this.best = 0;
@@ -66,7 +66,7 @@ var GPTouchLayer = cc.Layer.extend({
     initScore: function () {
         this.lbScore = new ccui.Text();
         this.lbScore.attr({
-            x: GC.w - 160,
+            x: GC.w - 160*GC.wscale,
             y: GC.h - 52,
             textAlign: cc.TEXT_ALIGNMENT_CENTER,
             text: this.score,
@@ -76,7 +76,7 @@ var GPTouchLayer = cc.Layer.extend({
 
         this.lbAdd = new ccui.Text();
         this.lbAdd.attr({
-            x: GC.w - 160,
+            x: GC.w - 160*GC.wscale,
             y: GC.h - 50,
             textAlign: cc.TEXT_ALIGNMENT_CENTER,
             font: "22px AmericanTypewriter",
@@ -87,7 +87,7 @@ var GPTouchLayer = cc.Layer.extend({
 
         this.lbBest = new ccui.Text();
         this.lbBest.attr({
-            x: GC.w - 58,
+            x: GC.w - 58*GC.wscale  ,
             y: GC.h - 52,
             textAlign: cc.TEXT_ALIGNMENT_CENTER,
             string: this.best,
@@ -114,7 +114,10 @@ var GPTouchLayer = cc.Layer.extend({
         var tileSp = TileSprite.getOrCreateTile(tile.value);
         tileSp.location.x = tile.x;
         tileSp.location.y = tile.y;
-        tileSp.x = this.gridX + tile.x * (tileSp.width + GC.gap) + GC.gap + tileSp.width / 2;
+        //(tileWidth + gap) * x + gap + tileWidth / 2+ GC.centerX-gridWidth/2
+        //tileSp.x = this.gridX + tile.x * (tileSp.width + GC.gap) + GC.gap + tileSp.width / 2;
+        //tileSp.y = this.gridY - tile.y * (tileSp.height + GC.gap) - GC.gap - tileSp.height / 2;
+        tileSp.x = tile.x * (tileSp.width + GC.gap) + GC.gap + tileSp.width / 2  +GC.tileStartX;
         tileSp.y = this.gridY - tile.y * (tileSp.height + GC.gap) - GC.gap - tileSp.height / 2;
         tileSp.setValue(tile.value);
         tileSp.visible = false;
@@ -153,7 +156,7 @@ var GPTouchLayer = cc.Layer.extend({
         if (tileFrom) {
             tileFrom.location.x = tile.x;
             tileFrom.location.y = tile.y;
-            tileFrom.playMove(this.gridX + tile.x * (tileFrom.width + GC.gap) + GC.gap + tileFrom.width / 2,
+            tileFrom.playMove(tile.x * (tileFrom.width + GC.gap) + GC.gap + tileFrom.width / 2 +GC.tileStartX,
                     this.gridY - tile.y * (tileFrom.height + GC.gap) - GC.gap - tileFrom.height / 2);
         }
     },
@@ -409,7 +412,7 @@ var GPTouchLayer = cc.Layer.extend({
         var self = this,
             actionMove, seqAction;
         //加分效果
-        actionMove = cc.moveTo(0.3, cc.p(GC.w - 160, GC.h - 20));
+        actionMove = cc.moveTo(0.3, cc.p(GC.w - 160*GC.wscale, GC.h - 20));
         seqAction = cc.sequence(actionMove, cc.callFunc(function () {
             self.lbAdd.visible = false;
         }));

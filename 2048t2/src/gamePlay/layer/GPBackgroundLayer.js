@@ -15,7 +15,7 @@ var GPBackgroundLayer = cc.LayerColor.extend({
     initBackground: function () {
         var menuBg, gridBg, tileBg,
             size = GC.size, // 每行tile个数
-            gridWidth = GC.w - GC.gridMargin, //网格宽度
+            //gridWidth = GC.gridWidth, //网格宽度
             tileWidth = GC.tileWidth, // tile的宽度
             gap = GC.gap, //tile间距是16
             gridY = GC.h - 140, //网格Y坐标
@@ -34,9 +34,9 @@ var GPBackgroundLayer = cc.LayerColor.extend({
         gridBg = new cc.Scale9Sprite("background.png");
         gridBg.attr({
             x:  GC.centerX,
-            y: gridY - gridWidth / 2,
-            width: gridWidth,
-            height: gridWidth
+            y: gridY - GC.gridWidth / 2,
+            width: GC.gridWidth,
+            height: GC.gridWidth
         });
         this.addChild(gridBg);
 
@@ -46,9 +46,8 @@ var GPBackgroundLayer = cc.LayerColor.extend({
             for (var x = 0; x < size; x++) {
                 tileBg = new cc.Sprite("#backtile.png");
                 tileBg.attr({
-                    x: (tileWidth + gap) * x + gap + tileWidth / 2+ GC.centerX-gridWidth/2,
-                    y: gridY - (tileWidth + gap) * y - gap - tileWidth / 2,
-                    scale:GC.wscale
+                    x: (tileWidth + gap) * x + gap + tileWidth / 2+ GC.tileStartX,
+                    y: gridY - (tileWidth + gap) * y - gap - tileWidth / 2
                 });
                 texSourceBatch.addChild(tileBg);
             }
