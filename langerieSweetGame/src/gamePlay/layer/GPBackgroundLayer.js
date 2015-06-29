@@ -41,12 +41,12 @@ var GPBackgroundLayer = cc.LayerColor.extend({
 
 
         //menu背景
-        //menuBg = new cc.Sprite("#menu.png");
-        //menuBg.attr({
-        //    x: GC.centerX,
-        //    y: GC.h-60.5
-        //});
-        //this.addChild(menuBg);
+        menuBg = new cc.Sprite("#menu.png");
+        menuBg.attr({
+            x: GC.centerX,
+            y: GC.h-60.5
+        });
+        this.addChild(menuBg);
 
         //游戏区背景
         gridBg = cc.Scale9Sprite.create("background.png");
@@ -65,16 +65,16 @@ var GPBackgroundLayer = cc.LayerColor.extend({
         for (var y = 0; y < size; y++) {
             for (var x = 0; x < size; x++) {
                 //tileBg = new cc.Sprite("#backtile.png");
-                tileBg = new cc.Sprite("res/source/backtile"+tileIndexs[i++]+".png");
+                tileBg = new cc.Sprite("#backtile"+tileIndexs[i++]+".png");
                 tileBg.attr({
                     x: (tileWidth + gap) * x + gap + tileWidth / 2+ GC.tileStartX,
                     y: GC.tileStartY - (tileWidth + gap) * y - gap - tileWidth / 2
                 });
-                //texSourceBatch.addChild(tileBg);
-                this.addChild(tileBg);
+                texSourceBatch.addChild(tileBg);
+                //this.addChild(tileBg);
             }
         }
-        //this.addChild(texSourceBatch);
+        this.addChild(texSourceBatch);
 
     }
 });
