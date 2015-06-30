@@ -36,17 +36,33 @@ var GPBackgroundLayer = cc.LayerColor.extend({
             x:  GC.centerX,
             y:  GC.centerY
         });
-        this.addChild(bg);
         //GC.spriteTileRepeat(bg);
+        this.addChild(bg);
 
+        //top背景
+        var topbg=cc.Sprite.create("#top.png");
+        topbg.attr({
+            x:GC.centerX,
+            y:GC.h
+        });
+        topbg.setAnchorPoint(0.5,1);
+        this.addChild(topbg);
 
         //menu背景
-        menuBg = new cc.Sprite("#menu.png");
-        menuBg.attr({
+        //menuBg = new cc.Sprite("#menu.png");
+        //menuBg.attr({
+        //    x: GC.centerX,
+        //    y: GC.h-60.5
+        //});
+        //this.addChild(menuBg);
+
+        //scorebar
+        var scorebar = cc.Sprite.create("#scorebar.png");
+        scorebar.attr({
             x: GC.centerX,
-            y: GC.h-60.5
+            y: GC.h-topbg.getContentSize().h-scorebar.getContentSize().h/2-40
         });
-        this.addChild(menuBg);
+        this.addChild(scorebar);
 
         //游戏区背景
         gridBg = cc.Scale9Sprite.create("background.png");
