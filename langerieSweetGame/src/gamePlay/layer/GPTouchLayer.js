@@ -66,21 +66,22 @@ var GPTouchLayer = cc.Layer.extend({
     initScore: function () {
         this.lbScore = new ccui.Text();
         this.lbScore.attr({
-            x: GC.w - 160*GC.wscale,
-            y: GC.h - 52,
+            x: GC.scorebar.getPositionX()+5,
+            y: GC.scorebar.getPositionY()-5,
             textAlign: cc.TEXT_ALIGNMENT_CENTER,
             text: this.score,
+            color: cc.color(10, 10, 10),
             font: "26px AmericanTypewriter"
         });
         this.addChild(this.lbScore);
 
         this.lbAdd = new ccui.Text();
         this.lbAdd.attr({
-            x: GC.w - 160*GC.wscale,
-            y: GC.h - 50,
+            x: this.lbScore.getPositionX(),
+            y: this.lbScore.getPositionY()-2,
             textAlign: cc.TEXT_ALIGNMENT_CENTER,
             font: "22px AmericanTypewriter",
-            color: cc.color(139, 129, 119),
+            color: cc.color(10, 10, 10),
             visble: false
         });
         this.addChild(this.lbAdd);
@@ -93,6 +94,7 @@ var GPTouchLayer = cc.Layer.extend({
             string: this.best,
             font: "26px AmericanTypewriter"
         });
+        this.lbBest.setVisible(false);
         this.addChild(this.lbBest);
 
     },
@@ -412,14 +414,14 @@ var GPTouchLayer = cc.Layer.extend({
         var self = this,
             actionMove, seqAction;
         //加分效果
-        actionMove = cc.moveTo(0.3, cc.p(GC.w - 160*GC.wscale, GC.h - 20));
+        actionMove = cc.moveTo(0.3, cc.p(this.lbScore.getPositionX(), this.lbScore.getPositionY()-10));
         seqAction = cc.sequence(actionMove, cc.callFunc(function () {
             self.lbAdd.visible = false;
         }));
 
         this.lbAdd.visible = true;
         this.lbAdd.string = "+" + score;
-        self.lbAdd.y = GC.h - 50;
+        self.lbAdd.y = this.lbScore.getPositionY()-60;
         self.lbAdd.opacity = 255;
         this.lbAdd.stopAllActions();
         this.lbAdd.runAction(seqAction);

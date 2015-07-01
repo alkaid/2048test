@@ -56,13 +56,21 @@ var GPBackgroundLayer = cc.LayerColor.extend({
         //});
         //this.addChild(menuBg);
 
+        //logo
+        var logo = cc.Sprite.create("#logo.png");
+        logo.attr({
+            x: GC.centerX,
+            y: GC.h-topbg.getContentSize().height-logo.getContentSize().height/2-10
+        });
+        this.addChild(logo);
         //scorebar
         var scorebar = cc.Sprite.create("#scorebar.png");
         scorebar.attr({
             x: GC.centerX,
-            y: GC.h-topbg.getContentSize().h-scorebar.getContentSize().h/2-40
+            y: GC.h-topbg.getContentSize().height-scorebar.getContentSize().height-logo.getContentSize().height/2-10
         });
         this.addChild(scorebar);
+        GC.scorebar=scorebar;
 
         //游戏区背景
         gridBg = cc.Scale9Sprite.create("background.png");
