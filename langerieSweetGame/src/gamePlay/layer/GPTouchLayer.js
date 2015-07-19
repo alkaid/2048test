@@ -445,6 +445,7 @@ var GPTouchLayer = cc.Layer.extend({
         this.initGame();
     },
     gameOver: function () {
+        GC.score=this.score;
         this.state = GC.GAME_STATE.OVER;
 
         this.resultWin = new cc.Scale9Sprite("background.png");
@@ -456,12 +457,17 @@ var GPTouchLayer = cc.Layer.extend({
             opacity: 76
         });
         this.addChild(this.resultWin);
-        this.lbResult = new cc.Sprite(this.won ? "#result_success.png" : "#result_failed.png");
-        this.lbResult.attr({
-            x: GC.w_2,
-            y: GC.h_2 - 65
-        });
-        this.addChild(this.lbResult);
+        if(this.won){
+            var scene = new ResultScene();
+            cc.director.runScene(new cc.TransitionFade(1.2, scene));
+        }else{
+            this.lbResult = new cc.Sprite(this.won ? "#result_success.png" : "#result_failed.png");
+            this.lbResult.attr({
+                x: GC.w_2,
+                y: GC.h_2 - 65
+            });
+            this.addChild(this.lbResult);
+        }
     }
 });
 

@@ -40,7 +40,7 @@
         <key>flipPVR</key>
         <false/>
         <key>ditherType</key>
-        <enum type="SettingsBase::DitherType">NearestNeighbour</enum>
+        <enum type="SettingsBase::DitherType">FloydSteinberg</enum>
         <key>backgroundColor</key>
         <uint>0</uint>
         <key>libGdx</key>
@@ -135,7 +135,7 @@
         <key>forceIdenticalLayout</key>
         <false/>
         <key>outputFormat</key>
-        <enum type="SettingsBase::OutputFormat">RGBA4444</enum>
+        <enum type="SettingsBase::OutputFormat">RGBA8888</enum>
         <key>contentProtection</key>
         <struct type="ContentProtection">
             <key>key</key>

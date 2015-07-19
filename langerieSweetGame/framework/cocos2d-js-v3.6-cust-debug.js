@@ -20384,6 +20384,1071 @@ cc.Audio = cc.Class.extend({
         cc.audioEngine._resumePlaying();
     });
 })(cc.__audioSupport);
+cc._globalFontSize = cc.ITEM_SIZE;
+cc._globalFontName = "Arial";
+cc._globalFontNameRelease = false;
+cc.MenuItem = cc.Node.extend({
+    _enabled: false,
+    _target: null,
+    _callback: null,
+    _isSelected: false,
+    _className: "MenuItem",
+    ctor: function (callback, target) {
+        var nodeP = cc.Node.prototype;
+        nodeP.ctor.call(this);
+        this._target = null;
+        this._callback = null;
+        this._isSelected = false;
+        this._enabled = false;
+        nodeP.setAnchorPoint.call(this, 0.5, 0.5);
+        this._target = target || null;
+        this._callback = callback || null;
+        if (this._callback) {
+            this._enabled = true;
+        }
+    },
+    isSelected: function () {
+        return this._isSelected;
+    },
+    setOpacityModifyRGB: function (value) {
+    },
+    isOpacityModifyRGB: function () {
+        return false;
+    },
+    setTarget: function (selector, rec) {
+        this._target = rec;
+        this._callback = selector;
+    },
+    isEnabled: function () {
+        return this._enabled;
+    },
+    setEnabled: function (enable) {
+        this._enabled = enable;
+    },
+    initWithCallback: function (callback, target) {
+        this.anchorX = 0.5;
+        this.anchorY = 0.5;
+        this._target = target;
+        this._callback = callback;
+        this._enabled = true;
+        this._isSelected = false;
+        return true;
+    },
+    rect: function () {
+        var locPosition = this._position, locContentSize = this._contentSize, locAnchorPoint = this._anchorPoint;
+        return cc.rect(locPosition.x - locContentSize.width * locAnchorPoint.x,
+            locPosition.y - locContentSize.height * locAnchorPoint.y,
+            locContentSize.width, locContentSize.height);
+    },
+    selected: function () {
+        this._isSelected = true;
+    },
+    unselected: function () {
+        this._isSelected = false;
+    },
+    setCallback: function (callback, target) {
+        this._target = target;
+        this._callback = callback;
+    },
+    activate: function () {
+        if (this._enabled) {
+            var locTarget = this._target, locCallback = this._callback;
+            if (!locCallback)
+                return;
+            if (locTarget && cc.isString(locCallback)) {
+                locTarget[locCallback](this);
+            } else if (locTarget && cc.isFunction(locCallback)) {
+                locCallback.call(locTarget, this);
+            } else
+                locCallback(this);
+        }
+    }
+});
+var _p = cc.MenuItem.prototype;
+_p.enabled;
+cc.defineGetterSetter(_p, "enabled", _p.isEnabled, _p.setEnabled);
+cc.MenuItem.create = function (callback, target) {
+    return new cc.MenuItem(callback, target);
+};
+cc.MenuItemLabel = cc.MenuItem.extend({
+    _disabledColor: null,
+    _label: null,
+    _originalScale: 0,
+    _colorBackup: null,
+    ctor: function (label, selector, target) {
+        cc.MenuItem.prototype.ctor.call(this, selector, target);
+        this._disabledColor = null;
+        this._label = null;
+        this._colorBackup = null;
+        if (label) {
+            this._originalScale = 1.0;
+            this._colorBackup = cc.color.WHITE;
+            this._disabledColor = cc.color(126, 126, 126);
+            this.setLabel(label);
+            this.cascadeColor = true;
+            this.cascadeOpacity = true;
+        }
+    },
+    getDisabledColor: function () {
+        return this._disabledColor;
+    },
+    setDisabledColor: function (color) {
+        this._disabledColor = color;
+    },
+    getLabel: function () {
+        return this._label;
+    },
+    setLabel: function (label) {
+        if (label) {
+            this.addChild(label);
+            label.anchorX = 0;
+            label.anchorY = 0;
+            this.width = label.width;
+            this.height = label.height;
+        }
+        if (this._label) {
+            this.removeChild(this._label, true);
+        }
+        this._label = label;
+    },
+    setEnabled: function (enabled) {
+        if (this._enabled !== enabled) {
+            var locLabel = this._label;
+            if (!enabled) {
+                this._colorBackup = locLabel.color;
+                locLabel.color = this._disabledColor;
+            } else {
+                locLabel.color = this._colorBackup;
+            }
+        }
+        cc.MenuItem.prototype.setEnabled.call(this, enabled);
+    },
+    setOpacity: function (opacity) {
+        this._label.opacity = opacity;
+    },
+    getOpacity: function () {
+        return this._label.opacity;
+    },
+    setColor: function (color) {
+        this._label.color = color;
+    },
+    getColor: function () {
+        return this._label.color;
+    },
+    initWithLabel: function (label, selector, target) {
+        this.initWithCallback(selector, target);
+        this._originalScale = 1.0;
+        this._colorBackup = cc.color.WHITE;
+        this._disabledColor = cc.color(126, 126, 126);
+        this.setLabel(label);
+        this.cascadeColor = true;
+        this.cascadeOpacity = true;
+        return true;
+    },
+    setString: function (label) {
+        this._label.string = label;
+        this.width = this._label.width;
+        this.height = this._label.height;
+    },
+    getString: function () {
+        return this._label.string;
+    },
+    activate: function () {
+        if (this._enabled) {
+            this.stopAllActions();
+            this.scale = this._originalScale;
+            cc.MenuItem.prototype.activate.call(this);
+        }
+    },
+    selected: function () {
+        if (this._enabled) {
+            cc.MenuItem.prototype.selected.call(this);
+            var action = this.getActionByTag(cc.ZOOM_ACTION_TAG);
+            if (action)
+                this.stopAction(action);
+            else
+                this._originalScale = this.scale;
+            var zoomAction = cc.scaleTo(0.1, this._originalScale * 1.2);
+            zoomAction.setTag(cc.ZOOM_ACTION_TAG);
+            this.runAction(zoomAction);
+        }
+    },
+    unselected: function () {
+        if (this._enabled) {
+            cc.MenuItem.prototype.unselected.call(this);
+            this.stopActionByTag(cc.ZOOM_ACTION_TAG);
+            var zoomAction = cc.scaleTo(0.1, this._originalScale);
+            zoomAction.setTag(cc.ZOOM_ACTION_TAG);
+            this.runAction(zoomAction);
+        }
+    }
+});
+var _p = cc.MenuItemLabel.prototype;
+_p.string;
+cc.defineGetterSetter(_p, "string", _p.getString, _p.setString);
+_p.disabledColor;
+cc.defineGetterSetter(_p, "disabledColor", _p.getDisabledColor, _p.setDisabledColor);
+_p.label;
+cc.defineGetterSetter(_p, "label", _p.getLabel, _p.setLabel);
+cc.MenuItemLabel.create = function (label, selector, target) {
+    return new cc.MenuItemLabel(label, selector, target);
+};
+cc.MenuItemAtlasFont = cc.MenuItemLabel.extend({
+    ctor: function (value, charMapFile, itemWidth, itemHeight, startCharMap, callback, target) {
+        var label;
+        if (value && value.length > 0) {
+            label = new cc.LabelAtlas(value, charMapFile, itemWidth, itemHeight, startCharMap);
+        }
+        cc.MenuItemLabel.prototype.ctor.call(this, label, callback, target);
+    },
+    initWithString: function (value, charMapFile, itemWidth, itemHeight, startCharMap, callback, target) {
+        if (!value || value.length === 0)
+            throw "cc.MenuItemAtlasFont.initWithString(): value should be non-null and its length should be greater than 0";
+        var label = new cc.LabelAtlas();
+        label.initWithString(value, charMapFile, itemWidth, itemHeight, startCharMap);
+        if (this.initWithLabel(label, callback, target)) {
+        }
+        return true;
+    }
+});
+cc.MenuItemAtlasFont.create = function (value, charMapFile, itemWidth, itemHeight, startCharMap, callback, target) {
+    return new cc.MenuItemAtlasFont(value, charMapFile, itemWidth, itemHeight, startCharMap, callback, target);
+};
+cc.MenuItemFont = cc.MenuItemLabel.extend({
+    _fontSize: null,
+    _fontName: null,
+    ctor: function (value, callback, target) {
+        var label;
+        if (value && value.length > 0) {
+            this._fontName = cc._globalFontName;
+            this._fontSize = cc._globalFontSize;
+            label = new cc.LabelTTF(value, this._fontName, this._fontSize);
+        }
+        else {
+            this._fontSize = 0;
+            this._fontName = "";
+        }
+        cc.MenuItemLabel.prototype.ctor.call(this, label, callback, target);
+    },
+    initWithString: function (value, callback, target) {
+        if (!value || value.length === 0)
+            throw "Value should be non-null and its length should be greater than 0";
+        this._fontName = cc._globalFontName;
+        this._fontSize = cc._globalFontSize;
+        var label = new cc.LabelTTF(value, this._fontName, this._fontSize);
+        if (this.initWithLabel(label, callback, target)) {
+        }
+        return true;
+    },
+    setFontSize: function (s) {
+        this._fontSize = s;
+        this._recreateLabel();
+    },
+    getFontSize: function () {
+        return this._fontSize;
+    },
+    setFontName: function (name) {
+        this._fontName = name;
+        this._recreateLabel();
+    },
+    getFontName: function () {
+        return this._fontName;
+    },
+    _recreateLabel: function () {
+        var label = new cc.LabelTTF(this._label.string, this._fontName, this._fontSize);
+        this.setLabel(label);
+    }
+});
+cc.MenuItemFont.setFontSize = function (fontSize) {
+    cc._globalFontSize = fontSize;
+};
+cc.MenuItemFont.fontSize = function () {
+    return cc._globalFontSize;
+};
+cc.MenuItemFont.setFontName = function (name) {
+    if (cc._globalFontNameRelease) {
+        cc._globalFontName = '';
+    }
+    cc._globalFontName = name;
+    cc._globalFontNameRelease = true;
+};
+var _p = cc.MenuItemFont.prototype;
+_p.fontSize;
+cc.defineGetterSetter(_p, "fontSize", _p.getFontSize, _p.setFontSize);
+_p.fontName;
+cc.defineGetterSetter(_p, "fontName", _p.getFontName, _p.setFontName);
+cc.MenuItemFont.fontName = function () {
+    return cc._globalFontName;
+};
+cc.MenuItemFont.create = function (value, callback, target) {
+    return new cc.MenuItemFont(value, callback, target);
+};
+cc.MenuItemSprite = cc.MenuItem.extend({
+    _normalImage: null,
+    _selectedImage: null,
+    _disabledImage: null,
+    ctor: function (normalSprite, selectedSprite, three, four, five) {
+        cc.MenuItem.prototype.ctor.call(this);
+        this._normalImage = null;
+        this._selectedImage = null;
+        this._disabledImage = null;
+        if (selectedSprite !== undefined) {
+            var disabledImage, target, callback;
+            if (five !== undefined) {
+                disabledImage = three;
+                callback = four;
+                target = five;
+            } else if (four !== undefined && cc.isFunction(four)) {
+                disabledImage = three;
+                callback = four;
+            } else if (four !== undefined && cc.isFunction(three)) {
+                target = four;
+                callback = three;
+                disabledImage = null;
+            } else if (three === undefined) {
+                disabledImage = null;
+            }
+            this.initWithNormalSprite(normalSprite, selectedSprite, disabledImage, callback, target);
+        }
+    },
+    getNormalImage: function () {
+        return this._normalImage;
+    },
+    setNormalImage: function (normalImage) {
+        if (this._normalImage === normalImage) {
+            return;
+        }
+        if (normalImage) {
+            this.addChild(normalImage, 0, cc.NORMAL_TAG);
+            normalImage.anchorX = 0;
+            normalImage.anchorY = 0;
+        }
+        if (this._normalImage) {
+            this.removeChild(this._normalImage, true);
+        }
+        this._normalImage = normalImage;
+        this.width = this._normalImage.width;
+        this.height = this._normalImage.height;
+        this._updateImagesVisibility();
+        if (normalImage.textureLoaded && !normalImage.textureLoaded()) {
+            normalImage.addEventListener("load", function (sender) {
+                this.width = sender.width;
+                this.height = sender.height;
+            }, this);
+        }
+    },
+    getSelectedImage: function () {
+        return this._selectedImage;
+    },
+    setSelectedImage: function (selectedImage) {
+        if (this._selectedImage === selectedImage)
+            return;
+        if (selectedImage) {
+            this.addChild(selectedImage, 0, cc.SELECTED_TAG);
+            selectedImage.anchorX = 0;
+            selectedImage.anchorY = 0;
+        }
+        if (this._selectedImage) {
+            this.removeChild(this._selectedImage, true);
+        }
+        this._selectedImage = selectedImage;
+        this._updateImagesVisibility();
+    },
+    getDisabledImage: function () {
+        return this._disabledImage;
+    },
+    setDisabledImage: function (disabledImage) {
+        if (this._disabledImage === disabledImage)
+            return;
+        if (disabledImage) {
+            this.addChild(disabledImage, 0, cc.DISABLE_TAG);
+            disabledImage.anchorX = 0;
+            disabledImage.anchorY = 0;
+        }
+        if (this._disabledImage)
+            this.removeChild(this._disabledImage, true);
+        this._disabledImage = disabledImage;
+        this._updateImagesVisibility();
+    },
+    initWithNormalSprite: function (normalSprite, selectedSprite, disabledSprite, callback, target) {
+        this.initWithCallback(callback, target);
+        this.setNormalImage(normalSprite);
+        this.setSelectedImage(selectedSprite);
+        this.setDisabledImage(disabledSprite);
+        var locNormalImage = this._normalImage;
+        if (locNormalImage) {
+            this.width = locNormalImage.width;
+            this.height = locNormalImage.height;
+            if (locNormalImage.textureLoaded && !locNormalImage.textureLoaded()) {
+                locNormalImage.addEventListener("load", function (sender) {
+                    this.width = sender.width;
+                    this.height = sender.height;
+                    this.cascadeColor = true;
+                    this.cascadeOpacity = true;
+                }, this);
+            }
+        }
+        this.cascadeColor = true;
+        this.cascadeOpacity = true;
+        return true;
+    },
+    setColor: function (color) {
+        this._normalImage.color = color;
+        if (this._selectedImage)
+            this._selectedImage.color = color;
+        if (this._disabledImage)
+            this._disabledImage.color = color;
+    },
+    getColor: function () {
+        return this._normalImage.color;
+    },
+    setOpacity: function (opacity) {
+        this._normalImage.opacity = opacity;
+        if (this._selectedImage)
+            this._selectedImage.opacity = opacity;
+        if (this._disabledImage)
+            this._disabledImage.opacity = opacity;
+    },
+    getOpacity: function () {
+        return this._normalImage.opacity;
+    },
+    selected: function () {
+        cc.MenuItem.prototype.selected.call(this);
+        if (this._normalImage) {
+            if (this._disabledImage)
+                this._disabledImage.visible = false;
+            if (this._selectedImage) {
+                this._normalImage.visible = false;
+                this._selectedImage.visible = true;
+            } else
+                this._normalImage.visible = true;
+        }
+    },
+    unselected: function () {
+        cc.MenuItem.prototype.unselected.call(this);
+        if (this._normalImage) {
+            this._normalImage.visible = true;
+            if (this._selectedImage)
+                this._selectedImage.visible = false;
+            if (this._disabledImage)
+                this._disabledImage.visible = false;
+        }
+    },
+    setEnabled: function (bEnabled) {
+        if (this._enabled !== bEnabled) {
+            cc.MenuItem.prototype.setEnabled.call(this, bEnabled);
+            this._updateImagesVisibility();
+        }
+    },
+    _updateImagesVisibility: function () {
+        var locNormalImage = this._normalImage, locSelImage = this._selectedImage, locDisImage = this._disabledImage;
+        if (this._enabled) {
+            if (locNormalImage)
+                locNormalImage.visible = true;
+            if (locSelImage)
+                locSelImage.visible = false;
+            if (locDisImage)
+                locDisImage.visible = false;
+        } else {
+            if (locDisImage) {
+                if (locNormalImage)
+                    locNormalImage.visible = false;
+                if (locSelImage)
+                    locSelImage.visible = false;
+                if (locDisImage)
+                    locDisImage.visible = true;
+            } else {
+                if (locNormalImage)
+                    locNormalImage.visible = true;
+                if (locSelImage)
+                    locSelImage.visible = false;
+            }
+        }
+    }
+});
+var _p = cc.MenuItemSprite.prototype;
+_p.normalImage;
+cc.defineGetterSetter(_p, "normalImage", _p.getNormalImage, _p.setNormalImage);
+_p.selectedImage;
+cc.defineGetterSetter(_p, "selectedImage", _p.getSelectedImage, _p.setSelectedImage);
+_p.disabledImage;
+cc.defineGetterSetter(_p, "disabledImage", _p.getDisabledImage, _p.setDisabledImage);
+cc.MenuItemSprite.create = function (normalSprite, selectedSprite, three, four, five) {
+    return new cc.MenuItemSprite(normalSprite, selectedSprite, three, four, five || undefined);
+};
+cc.MenuItemImage = cc.MenuItemSprite.extend({
+    ctor: function (normalImage, selectedImage, three, four, five) {
+        var normalSprite = null,
+            selectedSprite = null,
+            disabledSprite = null,
+            callback = null,
+            target = null;
+        if (normalImage === undefined) {
+            cc.MenuItemSprite.prototype.ctor.call(this);
+        }
+        else {
+            normalSprite = new cc.Sprite(normalImage);
+            selectedImage &&
+            (selectedSprite = new cc.Sprite(selectedImage));
+            if (four === undefined) {
+                callback = three;
+            }
+            else if (five === undefined) {
+                callback = three;
+                target = four;
+            }
+            else if (five) {
+                disabledSprite = new cc.Sprite(three);
+                callback = four;
+                target = five;
+            }
+            cc.MenuItemSprite.prototype.ctor.call(this, normalSprite, selectedSprite, disabledSprite, callback, target);
+        }
+    },
+    setNormalSpriteFrame: function (frame) {
+        this.setNormalImage(new cc.Sprite(frame));
+    },
+    setSelectedSpriteFrame: function (frame) {
+        this.setSelectedImage(new cc.Sprite(frame));
+    },
+    setDisabledSpriteFrame: function (frame) {
+        this.setDisabledImage(new cc.Sprite(frame));
+    },
+    initWithNormalImage: function (normalImage, selectedImage, disabledImage, callback, target) {
+        var normalSprite = null;
+        var selectedSprite = null;
+        var disabledSprite = null;
+        if (normalImage) {
+            normalSprite = new cc.Sprite(normalImage);
+        }
+        if (selectedImage) {
+            selectedSprite = new cc.Sprite(selectedImage);
+        }
+        if (disabledImage) {
+            disabledSprite = new cc.Sprite(disabledImage);
+        }
+        return this.initWithNormalSprite(normalSprite, selectedSprite, disabledSprite, callback, target);
+    }
+});
+cc.MenuItemImage.create = function (normalImage, selectedImage, three, four, five) {
+    return new cc.MenuItemImage(normalImage, selectedImage, three, four, five);
+};
+cc.MenuItemToggle = cc.MenuItem.extend({
+    subItems: null,
+    _selectedIndex: 0,
+    _opacity: null,
+    _color: null,
+    ctor: function () {
+        cc.MenuItem.prototype.ctor.call(this);
+        this._selectedIndex = 0;
+        this.subItems = [];
+        this._opacity = 0;
+        this._color = cc.color.WHITE;
+        if(arguments.length > 0)
+            this.initWithItems(Array.prototype.slice.apply(arguments));
+    },
+    getOpacity: function () {
+        return this._opacity;
+    },
+    setOpacity: function (opacity) {
+        this._opacity = opacity;
+        if (this.subItems && this.subItems.length > 0) {
+            for (var it = 0; it < this.subItems.length; it++) {
+                this.subItems[it].opacity = opacity;
+            }
+        }
+        this._color.a = opacity;
+    },
+    getColor: function () {
+        var locColor = this._color;
+        return cc.color(locColor.r, locColor.g, locColor.b, locColor.a);
+    },
+    setColor: function (color) {
+        var locColor = this._color;
+        locColor.r = color.r;
+        locColor.g = color.g;
+        locColor.b = color.b;
+        if (this.subItems && this.subItems.length > 0) {
+            for (var it = 0; it < this.subItems.length; it++) {
+                this.subItems[it].setColor(color);
+            }
+        }
+        if (color.a !== undefined && !color.a_undefined) {
+            this.setOpacity(color.a);
+        }
+    },
+    getSelectedIndex: function () {
+        return this._selectedIndex;
+    },
+    setSelectedIndex: function (SelectedIndex) {
+        if (SelectedIndex !== this._selectedIndex) {
+            this._selectedIndex = SelectedIndex;
+            var currItem = this.getChildByTag(cc.CURRENT_ITEM);
+            if (currItem)
+                currItem.removeFromParent(false);
+            var item = this.subItems[this._selectedIndex];
+            this.addChild(item, 0, cc.CURRENT_ITEM);
+            var w = item.width, h = item.height;
+            this.width = w;
+            this.height = h;
+            item.setPosition(w / 2, h / 2);
+        }
+    },
+    getSubItems: function () {
+        return this.subItems;
+    },
+    setSubItems: function (subItems) {
+        this.subItems = subItems;
+    },
+    initWithItems: function (args) {
+        var l = args.length;
+        if (cc.isFunction(args[args.length - 2])) {
+            this.initWithCallback(args[args.length - 2], args[args.length - 1]);
+            l = l - 2;
+        } else if (cc.isFunction(args[args.length - 1])) {
+            this.initWithCallback(args[args.length - 1], null);
+            l = l - 1;
+        } else {
+            this.initWithCallback(null, null);
+        }
+        var locSubItems = this.subItems;
+        locSubItems.length = 0;
+        for (var i = 0; i < l; i++) {
+            if (args[i])
+                locSubItems.push(args[i]);
+        }
+        this._selectedIndex = cc.UINT_MAX;
+        this.setSelectedIndex(0);
+        this.cascadeColor = true;
+        this.cascadeOpacity = true;
+        return true;
+    },
+    addSubItem: function (item) {
+        this.subItems.push(item);
+    },
+    activate: function () {
+        if (this._enabled) {
+            var newIndex = (this._selectedIndex + 1) % this.subItems.length;
+            this.setSelectedIndex(newIndex);
+        }
+        cc.MenuItem.prototype.activate.call(this);
+    },
+    selected: function () {
+        cc.MenuItem.prototype.selected.call(this);
+        this.subItems[this._selectedIndex].selected();
+    },
+    unselected: function () {
+        cc.MenuItem.prototype.unselected.call(this);
+        this.subItems[this._selectedIndex].unselected();
+    },
+    setEnabled: function (enabled) {
+        if (this._enabled !== enabled) {
+            cc.MenuItem.prototype.setEnabled.call(this, enabled);
+            var locItems = this.subItems;
+            if (locItems && locItems.length > 0) {
+                for (var it = 0; it < locItems.length; it++)
+                    locItems[it].enabled = enabled;
+            }
+        }
+    },
+    selectedItem: function () {
+        return this.subItems[this._selectedIndex];
+    },
+    getSelectedItem: function() {
+        return this.subItems[this._selectedIndex];
+    },
+    onEnter: function () {
+        cc.Node.prototype.onEnter.call(this);
+        this.setSelectedIndex(this._selectedIndex);
+    }
+});
+var _p = cc.MenuItemToggle.prototype;
+_p.selectedIndex;
+cc.defineGetterSetter(_p, "selectedIndex", _p.getSelectedIndex, _p.setSelectedIndex);
+cc.MenuItemToggle.create = function () {
+    if ((arguments.length > 0) && (arguments[arguments.length - 1] == null))
+        cc.log("parameters should not be ending with null in Javascript");
+    var ret = new cc.MenuItemToggle();
+    ret.initWithItems(Array.prototype.slice.apply(arguments));
+    return ret;
+};
+cc.MENU_STATE_WAITING = 0;
+cc.MENU_STATE_TRACKING_TOUCH = 1;
+cc.MENU_HANDLER_PRIORITY = -128;
+cc.DEFAULT_PADDING = 5;
+cc.Menu = cc.Layer.extend({
+    enabled: false,
+    _selectedItem: null,
+    _state: -1,
+    _touchListener: null,
+    _className: "Menu",
+    ctor: function (menuItems) {
+        cc.Layer.prototype.ctor.call(this);
+        this._color = cc.color.WHITE;
+        this.enabled = false;
+        this._opacity = 255;
+        this._selectedItem = null;
+        this._state = -1;
+        this._touchListener = cc.EventListener.create({
+            event: cc.EventListener.TOUCH_ONE_BY_ONE,
+            swallowTouches: true,
+            onTouchBegan: this._onTouchBegan,
+            onTouchMoved: this._onTouchMoved,
+            onTouchEnded: this._onTouchEnded,
+            onTouchCancelled: this._onTouchCancelled
+        });
+        if ((arguments.length > 0) && (arguments[arguments.length - 1] == null))
+            cc.log("parameters should not be ending with null in Javascript");
+        var argc = arguments.length, items;
+        if (argc === 0) {
+            items = [];
+        } else if (argc === 1) {
+            if (menuItems instanceof Array) {
+                items = menuItems;
+            }
+            else items = [menuItems];
+        }
+        else if (argc > 1) {
+            items = [];
+            for (var i = 0; i < argc; i++) {
+                if (arguments[i])
+                    items.push(arguments[i]);
+            }
+        }
+        this.initWithArray(items);
+    },
+    onEnter: function () {
+        var locListener = this._touchListener;
+        if (!locListener._isRegistered())
+            cc.eventManager.addListener(locListener, this);
+        cc.Node.prototype.onEnter.call(this);
+    },
+    isEnabled: function () {
+        return this.enabled;
+    },
+    setEnabled: function (enabled) {
+        this.enabled = enabled;
+    },
+    initWithItems: function (args) {
+        var pArray = [];
+        if (args) {
+            for (var i = 0; i < args.length; i++) {
+                if (args[i])
+                    pArray.push(args[i]);
+            }
+        }
+        return this.initWithArray(pArray);
+    },
+    initWithArray: function (arrayOfItems) {
+        if (cc.Layer.prototype.init.call(this)) {
+            this.enabled = true;
+            var winSize = cc.winSize;
+            this.setPosition(winSize.width / 2, winSize.height / 2);
+            this.setContentSize(winSize);
+            this.setAnchorPoint(0.5, 0.5);
+            this.ignoreAnchorPointForPosition(true);
+            if (arrayOfItems) {
+                for (var i = 0; i < arrayOfItems.length; i++)
+                    this.addChild(arrayOfItems[i], i);
+            }
+            this._selectedItem = null;
+            this._state = cc.MENU_STATE_WAITING;
+            this.cascadeColor = true;
+            this.cascadeOpacity = true;
+            return true;
+        }
+        return false;
+    },
+    addChild: function (child, zOrder, tag) {
+        if (!(child instanceof cc.MenuItem))
+            throw "cc.Menu.addChild() : Menu only supports MenuItem objects as children";
+        cc.Layer.prototype.addChild.call(this, child, zOrder, tag);
+    },
+    alignItemsVertically: function () {
+        this.alignItemsVerticallyWithPadding(cc.DEFAULT_PADDING);
+    },
+    alignItemsVerticallyWithPadding: function (padding) {
+        var height = -padding, locChildren = this._children, len, i, locScaleY, locHeight, locChild;
+        if (locChildren && locChildren.length > 0) {
+            for (i = 0, len = locChildren.length; i < len; i++)
+                height += locChildren[i].height * locChildren[i].scaleY + padding;
+            var y = height / 2.0;
+            for (i = 0, len = locChildren.length; i < len; i++) {
+                locChild = locChildren[i];
+                locHeight = locChild.height;
+                locScaleY = locChild.scaleY;
+                locChild.setPosition(0, y - locHeight * locScaleY / 2);
+                y -= locHeight * locScaleY + padding;
+            }
+        }
+    },
+    alignItemsHorizontally: function () {
+        this.alignItemsHorizontallyWithPadding(cc.DEFAULT_PADDING);
+    },
+    alignItemsHorizontallyWithPadding: function (padding) {
+        var width = -padding, locChildren = this._children, i, len, locScaleX, locWidth, locChild;
+        if (locChildren && locChildren.length > 0) {
+            for (i = 0, len = locChildren.length; i < len; i++)
+                width += locChildren[i].width * locChildren[i].scaleX + padding;
+            var x = -width / 2.0;
+            for (i = 0, len = locChildren.length; i < len; i++) {
+                locChild = locChildren[i];
+                locScaleX = locChild.scaleX;
+                locWidth = locChildren[i].width;
+                locChild.setPosition(x + locWidth * locScaleX / 2, 0);
+                x += locWidth * locScaleX + padding;
+            }
+        }
+    },
+    alignItemsInColumns: function () {
+        if ((arguments.length > 0) && (arguments[arguments.length - 1] == null))
+            cc.log("parameters should not be ending with null in Javascript");
+        var rows = [];
+        for (var i = 0; i < arguments.length; i++) {
+            rows.push(arguments[i]);
+        }
+        var height = -5;
+        var row = 0;
+        var rowHeight = 0;
+        var columnsOccupied = 0;
+        var rowColumns, tmp, len;
+        var locChildren = this._children;
+        if (locChildren && locChildren.length > 0) {
+            for (i = 0, len = locChildren.length; i < len; i++) {
+                if (row >= rows.length)
+                    continue;
+                rowColumns = rows[row];
+                if (!rowColumns)
+                    continue;
+                tmp = locChildren[i].height;
+                rowHeight = ((rowHeight >= tmp || isNaN(tmp)) ? rowHeight : tmp);
+                ++columnsOccupied;
+                if (columnsOccupied >= rowColumns) {
+                    height += rowHeight + 5;
+                    columnsOccupied = 0;
+                    rowHeight = 0;
+                    ++row;
+                }
+            }
+        }
+        var winSize = cc.director.getWinSize();
+        row = 0;
+        rowHeight = 0;
+        rowColumns = 0;
+        var w = 0.0;
+        var x = 0.0;
+        var y = (height / 2);
+        if (locChildren && locChildren.length > 0) {
+            for (i = 0, len = locChildren.length; i < len; i++) {
+                var child = locChildren[i];
+                if (rowColumns === 0) {
+                    rowColumns = rows[row];
+                    w = winSize.width / (1 + rowColumns);
+                    x = w;
+                }
+                tmp = child._getHeight();
+                rowHeight = ((rowHeight >= tmp || isNaN(tmp)) ? rowHeight : tmp);
+                child.setPosition(x - winSize.width / 2, y - tmp / 2);
+                x += w;
+                ++columnsOccupied;
+                if (columnsOccupied >= rowColumns) {
+                    y -= rowHeight + 5;
+                    columnsOccupied = 0;
+                    rowColumns = 0;
+                    rowHeight = 0;
+                    ++row;
+                }
+            }
+        }
+    },
+    alignItemsInRows: function () {
+        if ((arguments.length > 0) && (arguments[arguments.length - 1] == null))
+            cc.log("parameters should not be ending with null in Javascript");
+        var columns = [], i;
+        for (i = 0; i < arguments.length; i++) {
+            columns.push(arguments[i]);
+        }
+        var columnWidths = [];
+        var columnHeights = [];
+        var width = -10;
+        var columnHeight = -5;
+        var column = 0;
+        var columnWidth = 0;
+        var rowsOccupied = 0;
+        var columnRows, child, len, tmp;
+        var locChildren = this._children;
+        if (locChildren && locChildren.length > 0) {
+            for (i = 0, len = locChildren.length; i < len; i++) {
+                child = locChildren[i];
+                if (column >= columns.length)
+                    continue;
+                columnRows = columns[column];
+                if (!columnRows)
+                    continue;
+                tmp = child.width;
+                columnWidth = ((columnWidth >= tmp || isNaN(tmp)) ? columnWidth : tmp);
+                columnHeight += (child.height + 5);
+                ++rowsOccupied;
+                if (rowsOccupied >= columnRows) {
+                    columnWidths.push(columnWidth);
+                    columnHeights.push(columnHeight);
+                    width += columnWidth + 10;
+                    rowsOccupied = 0;
+                    columnWidth = 0;
+                    columnHeight = -5;
+                    ++column;
+                }
+            }
+        }
+        var winSize = cc.director.getWinSize();
+        column = 0;
+        columnWidth = 0;
+        columnRows = 0;
+        var x = -width / 2;
+        var y = 0.0;
+        if (locChildren && locChildren.length > 0) {
+            for (i = 0, len = locChildren.length; i < len; i++) {
+                child = locChildren[i];
+                if (columnRows === 0) {
+                    columnRows = columns[column];
+                    y = columnHeights[column];
+                }
+                tmp = child._getWidth();
+                columnWidth = ((columnWidth >= tmp || isNaN(tmp)) ? columnWidth : tmp);
+                child.setPosition(x + columnWidths[column] / 2, y - winSize.height / 2);
+                y -= child.height + 10;
+                ++rowsOccupied;
+                if (rowsOccupied >= columnRows) {
+                    x += columnWidth + 5;
+                    rowsOccupied = 0;
+                    columnRows = 0;
+                    columnWidth = 0;
+                    ++column;
+                }
+            }
+        }
+    },
+    removeChild: function (child, cleanup) {
+        if (child == null)
+            return;
+        if (!(child instanceof cc.MenuItem)) {
+            cc.log("cc.Menu.removeChild():Menu only supports MenuItem objects as children");
+            return;
+        }
+        if (this._selectedItem === child)
+            this._selectedItem = null;
+        cc.Node.prototype.removeChild.call(this, child, cleanup);
+    },
+    _onTouchBegan: function (touch, event) {
+        var target = event.getCurrentTarget();
+        if (target._state !== cc.MENU_STATE_WAITING || !target._visible || !target.enabled)
+            return false;
+        for (var c = target.parent; c != null; c = c.parent) {
+            if (!c.isVisible())
+                return false;
+        }
+        target._selectedItem = target._itemForTouch(touch);
+        if (target._selectedItem) {
+            target._state = cc.MENU_STATE_TRACKING_TOUCH;
+            target._selectedItem.selected();
+            target._selectedItem.setNodeDirty();
+            return true;
+        }
+        return false;
+    },
+    _onTouchEnded: function (touch, event) {
+        var target = event.getCurrentTarget();
+        if (target._state !== cc.MENU_STATE_TRACKING_TOUCH) {
+            cc.log("cc.Menu.onTouchEnded(): invalid state");
+            return;
+        }
+        if (target._selectedItem) {
+            target._selectedItem.unselected();
+            target._selectedItem.setNodeDirty();
+            target._selectedItem.activate();
+        }
+        target._state = cc.MENU_STATE_WAITING;
+    },
+    _onTouchCancelled: function (touch, event) {
+        var target = event.getCurrentTarget();
+        if (target._state !== cc.MENU_STATE_TRACKING_TOUCH) {
+            cc.log("cc.Menu.onTouchCancelled(): invalid state");
+            return;
+        }
+        if (this._selectedItem) {
+            target._selectedItem.unselected();
+            target._selectedItem.setNodeDirty();
+        }
+        target._state = cc.MENU_STATE_WAITING;
+    },
+    _onTouchMoved: function (touch, event) {
+        var target = event.getCurrentTarget();
+        if (target._state !== cc.MENU_STATE_TRACKING_TOUCH) {
+            cc.log("cc.Menu.onTouchMoved(): invalid state");
+            return;
+        }
+        var currentItem = target._itemForTouch(touch);
+        if (currentItem !== target._selectedItem) {
+            if (target._selectedItem) {
+                target._selectedItem.unselected();
+                target._selectedItem.setNodeDirty();
+            }
+            target._selectedItem = currentItem;
+            if (target._selectedItem) {
+                target._selectedItem.selected();
+                target._selectedItem.setNodeDirty();
+            }
+        }
+    },
+    onExit: function () {
+        if (this._state === cc.MENU_STATE_TRACKING_TOUCH) {
+            if (this._selectedItem) {
+                this._selectedItem.unselected();
+                this._selectedItem = null;
+            }
+            this._state = cc.MENU_STATE_WAITING;
+        }
+        cc.Node.prototype.onExit.call(this);
+    },
+    setOpacityModifyRGB: function (value) {
+    },
+    isOpacityModifyRGB: function () {
+        return false;
+    },
+    _itemForTouch: function (touch) {
+        var touchLocation = touch.getLocation();
+        var itemChildren = this._children, locItemChild;
+        if (itemChildren && itemChildren.length > 0) {
+            for (var i = itemChildren.length - 1; i >= 0; i--) {
+                locItemChild = itemChildren[i];
+                if (locItemChild.isVisible() && locItemChild.isEnabled()) {
+                    var local = locItemChild.convertToNodeSpace(touchLocation);
+                    var r = locItemChild.rect();
+                    r.x = 0;
+                    r.y = 0;
+                    if (cc.rectContainsPoint(r, local))
+                        return locItemChild;
+                }
+            }
+        }
+        return null;
+    }
+});
+var _p = cc.Menu.prototype;
+_p.enabled;
+cc.Menu.create = function (menuItems) {
+    var argc = arguments.length;
+    if ((argc > 0) && (arguments[argc - 1] == null))
+        cc.log("parameters should not be ending with null in Javascript");
+    var ret;
+    if (argc === 0)
+        ret = new cc.Menu();
+    else if (argc === 1)
+        ret = new cc.Menu(menuItems);
+    else
+        ret = new cc.Menu(Array.prototype.slice.call(arguments, 0));
+    return ret;
+};
 cc.math = cc.math || {};
 cc.math.EPSILON = 1.0 / 64.0;
 cc.math.square = function(s){
@@ -24973,108 +26038,6 @@ cc.loader.register(["fnt"], cc._fntLoader);
     };
     proto._updateCharColorAndOpacity = function(){};
 })();
-cc.NodeGrid = cc.Node.extend({
-    grid: null,
-    _target: null,
-    getGrid: function () {
-        return this.grid;
-    },
-    setGrid: function (grid) {
-        this.grid = grid;
-    },
-    setTarget: function (target) {
-        this._target = target;
-    },
-    _transformForWebGL: function () {
-        var t4x4 = this._transform4x4, topMat4 = cc.current_stack.top;
-        var trans = this.getNodeToParentTransform();
-        var t4x4Mat = t4x4.mat;
-        t4x4Mat[0] = trans.a;
-        t4x4Mat[4] = trans.c;
-        t4x4Mat[12] = trans.tx;
-        t4x4Mat[1] = trans.b;
-        t4x4Mat[5] = trans.d;
-        t4x4Mat[13] = trans.ty;
-        t4x4Mat[14] = this._vertexZ;
-        topMat4.multiply(t4x4) ;
-        if (this._camera !== null && !(this.grid && this.grid.isActive())) {
-            var app = this._renderCmd._anchorPointInPoints,
-                apx = app.x, apy = app.y,
-                translate = (apx !== 0.0 || apy !== 0.0);
-            if (translate) {
-                if(!cc.SPRITEBATCHNODE_RENDER_SUBPIXEL) {
-                    apx = 0 | apx;
-                    apy = 0 | apy;
-                }
-                cc.kmGLTranslatef(apx, apy, 0);
-                this._camera.locate();
-                cc.kmGLTranslatef(-apx, -apy, 0);
-            } else {
-                this._camera.locate();
-            }
-        }
-    },
-    _createRenderCmd: function(){
-        if (cc._renderType === cc._RENDER_TYPE_WEBGL)
-            return new cc.NodeGrid.WebGLRenderCmd(this);
-        else
-            return new cc.Node.CanvasRenderCmd(this);
-    }
-});
-var _p = cc.NodeGrid.prototype;
-_p.grid;
-_p.target;
-cc.defineGetterSetter(_p, "target", null, _p.setTarget);
-cc.NodeGrid.create = function () {
-    return new cc.NodeGrid();
-};
-(function(){
-    cc.NodeGrid.WebGLRenderCmd = function(renderable){
-        cc.Node.WebGLRenderCmd.call(this, renderable);
-        this._needDraw = false;
-        this._gridBeginCommand = new cc.CustomRenderCmd(this, this.onGridBeginDraw);
-        this._gridEndCommand = new cc.CustomRenderCmd(this, this.onGridEndDraw);
-    };
-    var proto = cc.NodeGrid.WebGLRenderCmd.prototype = Object.create(cc.Node.WebGLRenderCmd.prototype);
-    proto.constructor = cc.NodeGrid.WebGLRenderCmd;
-    proto.visit = function(parentCmd) {
-        var node = this._node;
-        if (!node._visible)
-            return;
-        parentCmd = parentCmd || this.getParentRenderCmd();
-        if (node._parent && node._parent._renderCmd)
-            this._curLevel = node._parent._renderCmd._curLevel + 1;
-        var currentStack = cc.current_stack;
-        currentStack.stack.push(currentStack.top);
-        this._syncStatus(parentCmd);
-        currentStack.top = this._stackMatrix;
-        cc.renderer.pushRenderCommand(this._gridBeginCommand);
-        if (node._target)
-            node._target.visit();
-        var locChildren = node._children;
-        if (locChildren && locChildren.length > 0) {
-            var childLen = locChildren.length;
-            node.sortAllChildren();
-            for (var i = 0; i < childLen; i++) {
-                var child = locChildren[i];
-                child && child.visit();
-            }
-        }
-        cc.renderer.pushRenderCommand(this._gridEndCommand);
-        this._dirtyFlag = 0;
-        currentStack.top = currentStack.stack.pop();
-    };
-    proto.onGridBeginDraw = function(){
-        var locGrid = this._node.grid;
-        if (locGrid && locGrid._active)
-            locGrid.beforeDraw();
-    };
-    proto.onGridEndDraw = function(){
-        var locGrid = this._node.grid;
-        if (locGrid && locGrid._active)
-            locGrid.afterDraw(this._node);
-    };
-})();
 cc.v2fzero = function () {
     return {x: 0, y: 0};
 };
@@ -26215,546 +27178,6 @@ cc.ClippingNode.create = function (stencil) {
         cc.ClippingNode.WebGLRenderCmd._layer--;
     }
 })();
-cc.GridBase = cc.Class.extend({
-    _active:false,
-    _reuseGrid:0,
-    _gridSize:null,
-    _texture:null,
-    _step:null,
-    _grabber:null,
-    _isTextureFlipped:false,
-    _shaderProgram:null,
-    _directorProjection:0,
-    _dirty:false,
-    ctor:function (gridSize, texture, flipped) {
-        cc._checkWebGLRenderMode();
-        this._active=false;
-        this._reuseGrid=0;
-        this._gridSize=null;
-        this._texture=null;
-        this._step = cc.p(0, 0);
-        this._grabber=null;
-        this._isTextureFlipped=false;
-        this._shaderProgram=null;
-        this._directorProjection=0;
-        this._dirty=false;
-        if(gridSize !== undefined)
-            this.initWithSize(gridSize, texture, flipped);
-    },
-    isActive:function () {
-        return this._active;
-    },
-    setActive:function (active) {
-        this._active = active;
-        if (!active) {
-            var director = cc.director;
-            var proj = director.getProjection();
-            director.setProjection(proj);
-        }
-    },
-    getReuseGrid:function () {
-        return this._reuseGrid;
-    },
-    setReuseGrid:function (reuseGrid) {
-        this._reuseGrid = reuseGrid;
-    },
-    getGridSize:function () {
-        return cc.size(this._gridSize.width, this._gridSize.height);
-    },
-    setGridSize:function (gridSize) {
-        this._gridSize.width = parseInt(gridSize.width);
-        this._gridSize.height = parseInt(gridSize.height);
-    },
-    getStep:function () {
-        return cc.p(this._step.x, this._step.y);
-    },
-    setStep:function (step) {
-        this._step.x = step.x;
-        this._step.y = step.y;
-    },
-    isTextureFlipped:function () {
-        return this._isTextureFlipped;
-    },
-    setTextureFlipped:function (flipped) {
-        if (this._isTextureFlipped !== flipped) {
-            this._isTextureFlipped = flipped;
-            this.calculateVertexPoints();
-        }
-    },
-    initWithSize:function (gridSize, texture, flipped) {
-        if (!texture) {
-            var director = cc.director;
-            var winSize = director.getWinSizeInPixels();
-            var POTWide = cc.NextPOT(winSize.width);
-            var POTHigh = cc.NextPOT(winSize.height);
-            var data = new Uint8Array(POTWide * POTHigh * 4);
-            if (!data) {
-                cc.log("cocos2d: CCGrid: not enough memory.");
-                return false;
-            }
-            texture = new cc.Texture2D();
-            texture.initWithData(data, cc.Texture2D.PIXEL_FORMAT_RGBA8888, POTWide, POTHigh, winSize);
-            if (!texture) {
-                cc.log("cocos2d: CCGrid: error creating texture");
-                return false;
-            }
-        }
-        flipped = flipped || false;
-        this._active = false;
-        this._reuseGrid = 0;
-        this._gridSize = gridSize;
-        this._texture = texture;
-        this._isTextureFlipped = flipped;
-        this._step.x = this._texture.width / gridSize.width;
-        this._step.y = this._texture.height / gridSize.height;
-        this._grabber = new cc.Grabber();
-        if (!this._grabber)
-            return false;
-        this._grabber.grab(this._texture);
-        this._shaderProgram = cc.shaderCache.programForKey(cc.SHADER_POSITION_TEXTURE);
-        this.calculateVertexPoints();
-        return true;
-    },
-    beforeDraw:function () {
-        this._directorProjection = cc.director.getProjection();
-        this._grabber.beforeRender(this._texture);
-    },
-    afterDraw:function (target) {
-        this._grabber.afterRender(this._texture);
-        if (target && target.getCamera().isDirty()) {
-            var offset = target.getAnchorPointInPoints();
-            var stackMatrix = target._renderCmd._stackMatrix;
-            var translation = cc.math.Matrix4.createByTranslation(offset.x, offset.y, 0);
-            stackMatrix.multiply(translation);
-            target._camera._locateForRenderer(stackMatrix);
-            translation = cc.math.Matrix4.createByTranslation(-offset.x, -offset.y, 0, translation);
-            stackMatrix.multiply(translation);
-        }
-        cc.glBindTexture2D(this._texture);
-        this.beforeBlit();
-        this.blit(target);
-        this.afterBlit();
-    },
-    beforeBlit: function () {
-    },
-    afterBlit: function () {
-    },
-    blit:function () {
-        cc.log("cc.GridBase.blit(): Shall be overridden in subclass.");
-    },
-    reuse:function () {
-        cc.log("cc.GridBase.reuse(): Shall be overridden in subclass.");
-    },
-    calculateVertexPoints:function () {
-        cc.log("cc.GridBase.calculateVertexPoints(): Shall be overridden in subclass.");
-    },
-    set2DProjection:function () {
-        var winSize = cc.director.getWinSizeInPixels();
-        var gl = cc._renderContext;
-        gl.viewport(0, 0, winSize.width , winSize.height);
-        cc.kmGLMatrixMode(cc.KM_GL_PROJECTION);
-        cc.kmGLLoadIdentity();
-        var orthoMatrix = cc.math.Matrix4.createOrthographicProjection(0, winSize.width, 0, winSize.height, -1, 1);
-        cc.kmGLMultMatrix(orthoMatrix);
-        cc.kmGLMatrixMode(cc.KM_GL_MODELVIEW);
-        cc.kmGLLoadIdentity();
-        cc.setProjectionMatrixDirty()
-    }
-});
-cc.GridBase.create = function (gridSize, texture, flipped) {
-    return new cc.GridBase(gridSize, texture, flipped);
-};
-cc.Grid3D = cc.GridBase.extend({
-    _texCoordinates:null,
-    _vertices:null,
-    _originalVertices:null,
-    _indices:null,
-    _texCoordinateBuffer:null,
-    _verticesBuffer:null,
-    _indicesBuffer:null,
-    _needDepthTestForBlit: false,
-    _oldDepthTestValue: false,
-    _oldDepthWriteValue: false,
-    ctor:function (gridSize, texture, flipped) {
-        cc.GridBase.prototype.ctor.call(this);
-        this._texCoordinates=null;
-        this._vertices=null;
-        this._originalVertices=null;
-        this._indices=null;
-        this._texCoordinateBuffer=null;
-        this._verticesBuffer=null;
-        this._indicesBuffer=null;
-        if(gridSize !== undefined)
-            this.initWithSize(gridSize, texture, flipped);
-    },
-    vertex:function (pos) {
-         return this.getVertex(pos);
-    },
-    getVertex: function(pos){
-        if(pos.x !== (0| pos.x) || pos.y !== (0| pos.y))
-            cc.log("cc.Grid3D.vertex() : Numbers must be integers");
-        var index = 0 | ((pos.x * (this._gridSize.height + 1) + pos.y) * 3);
-        var locVertices = this._vertices;
-        return new cc.Vertex3F(locVertices[index], locVertices[index + 1], locVertices[index + 2]);
-    },
-    originalVertex:function (pos) {
-        return this.getOriginalVertex(pos);
-    },
-    getOriginalVertex: function(pos) {
-        if(pos.x !== (0| pos.x) || pos.y !== (0| pos.y))
-            cc.log("cc.Grid3D.originalVertex() : Numbers must be integers");
-        var index = 0 | ((pos.x * (this._gridSize.height + 1) + pos.y) * 3);
-        var locOriginalVertices = this._originalVertices;
-        return new cc.Vertex3F(locOriginalVertices[index], locOriginalVertices[index + 1], locOriginalVertices[index + 2]);
-    },
-    setVertex:function (pos, vertex) {
-        if(pos.x !== (0| pos.x) || pos.y !== (0| pos.y))
-            cc.log("cc.Grid3D.setVertex() : Numbers must be integers");
-        var index = 0 | ((pos.x * (this._gridSize.height + 1) + pos.y) * 3);
-        var vertArray = this._vertices;
-        vertArray[index] = vertex.x;
-        vertArray[index + 1] = vertex.y;
-        vertArray[index + 2] = vertex.z;
-        this._dirty = true;
-    },
-    beforeBlit: function () {
-        if (this._needDepthTestForBlit) {
-            var gl = cc._renderContext;
-            this._oldDepthTestValue = gl.isEnabled(gl.DEPTH_TEST);
-            this._oldDepthWriteValue = gl.getParameter(gl.DEPTH_WRITEMASK);
-            gl.enable(gl.DEPTH_TEST);
-            gl.depthMask(true);
-        }
-    },
-    afterBlit: function () {
-        if (this._needDepthTestForBlit) {
-            var gl = cc._renderContext;
-            if (this._oldDepthTestValue)
-                gl.enable(gl.DEPTH_TEST);
-            else
-                gl.disable(gl.DEPTH_TEST);
-            gl.depthMask(this._oldDepthWriteValue);
-        }
-    },
-    blit:function (target) {
-        var n = this._gridSize.width * this._gridSize.height;
-        cc.glEnableVertexAttribs(cc.VERTEX_ATTRIB_FLAG_POSITION | cc.VERTEX_ATTRIB_FLAG_TEX_COORDS);
-        this._shaderProgram.use();
-        this._shaderProgram._setUniformForMVPMatrixWithMat4(target._renderCmd._stackMatrix);
-        var gl = cc._renderContext, locDirty = this._dirty;
-        gl.bindBuffer(gl.ARRAY_BUFFER, this._verticesBuffer);
-        if (locDirty)
-            gl.bufferData(gl.ARRAY_BUFFER, this._vertices, gl.DYNAMIC_DRAW);
-        gl.vertexAttribPointer(cc.VERTEX_ATTRIB_POSITION, 3, gl.FLOAT, false, 0, 0);
-        gl.bindBuffer(gl.ARRAY_BUFFER, this._texCoordinateBuffer);
-        if (locDirty)
-            gl.bufferData(gl.ARRAY_BUFFER, this._texCoordinates, gl.DYNAMIC_DRAW);
-        gl.vertexAttribPointer(cc.VERTEX_ATTRIB_TEX_COORDS, 2, gl.FLOAT, false, 0, 0);
-        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this._indicesBuffer);
-        if (locDirty)
-            gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, this._indices, gl.STATIC_DRAW);
-        gl.drawElements(gl.TRIANGLES, n * 6, gl.UNSIGNED_SHORT, 0);
-        if (locDirty)
-            this._dirty = false;
-        cc.incrementGLDraws(1);
-    },
-    reuse:function () {
-        if (this._reuseGrid > 0) {
-            var locOriginalVertices = this._originalVertices, locVertices = this._vertices;
-            for (var i = 0, len =  this._vertices.length; i < len; i++)
-                locOriginalVertices[i] = locVertices[i];
-            --this._reuseGrid;
-        }
-    },
-    calculateVertexPoints:function () {
-        var gl = cc._renderContext;
-        var width = this._texture.pixelsWidth;
-        var height = this._texture.pixelsHeight;
-        var imageH = this._texture.getContentSizeInPixels().height;
-        var locGridSize = this._gridSize;
-        var numOfPoints = (locGridSize.width + 1) * (locGridSize.height + 1);
-        this._vertices = new Float32Array(numOfPoints * 3);
-        this._texCoordinates = new Float32Array(numOfPoints * 2);
-        this._indices = new Uint16Array(locGridSize.width * locGridSize.height * 6);
-        if(this._verticesBuffer)
-            gl.deleteBuffer(this._verticesBuffer);
-        this._verticesBuffer = gl.createBuffer();
-        if(this._texCoordinateBuffer)
-            gl.deleteBuffer(this._texCoordinateBuffer);
-        this._texCoordinateBuffer = gl.createBuffer();
-        if(this._indicesBuffer)
-            gl.deleteBuffer(this._indicesBuffer);
-        this._indicesBuffer = gl.createBuffer();
-        var x, y, i, locIndices = this._indices, locTexCoordinates = this._texCoordinates;
-        var locIsTextureFlipped = this._isTextureFlipped, locVertices = this._vertices;
-        for (x = 0; x < locGridSize.width; ++x) {
-            for (y = 0; y < locGridSize.height; ++y) {
-                var idx = (y * locGridSize.width) + x;
-                var x1 = x * this._step.x;
-                var x2 = x1 + this._step.x;
-                var y1 = y * this._step.y;
-                var y2 = y1 + this._step.y;
-                var a = (x * (locGridSize.height + 1) + y);
-                var b = ((x + 1) * (locGridSize.height + 1) + y);
-                var c = ((x + 1) * (locGridSize.height + 1) + (y + 1));
-                var d = (x * (locGridSize.height + 1) + (y + 1));
-                locIndices[idx * 6] = a;
-                locIndices[idx * 6 + 1] = b;
-                locIndices[idx * 6 + 2] = d;
-                locIndices[idx * 6 + 3] = b;
-                locIndices[idx * 6 + 4] = c;
-                locIndices[idx * 6 + 5] = d;
-                var l1 = [a * 3, b * 3, c * 3, d * 3];
-                var e = {x:x1, y:y1, z:0};
-                var f = {x:x2, y:y1, z:0};
-                var g = {x:x2, y:y2, z:0};
-                var h = {x:x1, y:y2, z:0};
-                var l2 = [e, f, g, h];
-                var tex1 = [a * 2, b * 2, c * 2, d * 2];
-                var tex2 = [cc.p(x1, y1), cc.p(x2, y1), cc.p(x2, y2), cc.p(x1, y2)];
-                for (i = 0; i < 4; ++i) {
-                    locVertices[l1[i]] = l2[i].x;
-                    locVertices[l1[i] + 1] = l2[i].y;
-                    locVertices[l1[i] + 2] = l2[i].z;
-                    locTexCoordinates[tex1[i]] = tex2[i].x / width;
-                    if (locIsTextureFlipped)
-                        locTexCoordinates[tex1[i] + 1] = (imageH - tex2[i].y) / height;
-                    else
-                        locTexCoordinates[tex1[i] + 1] = tex2[i].y / height;
-                }
-            }
-        }
-        this._originalVertices = new Float32Array(this._vertices);
-        gl.bindBuffer(gl.ARRAY_BUFFER, this._verticesBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, this._vertices, gl.DYNAMIC_DRAW);
-        gl.bindBuffer(gl.ARRAY_BUFFER, this._texCoordinateBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, this._texCoordinates, gl.DYNAMIC_DRAW);
-        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this._indicesBuffer);
-        gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, this._indices, gl.STATIC_DRAW);
-        this._dirty = true;
-    },
-    setNeedDepthTestForBlit: function(needDepthTest){
-        this._needDepthTestForBlit = needDepthTest;
-    },
-    getNeedDepthTestForBlit: function(){
-        return this._needDepthTestForBlit;
-    }
-});
-cc.Grid3D.create = function (gridSize, texture, flipped) {
-    return new cc.Grid3D(gridSize, texture, flipped);
-};
-cc.TiledGrid3D = cc.GridBase.extend({
-    _texCoordinates:null,
-    _vertices:null,
-    _originalVertices:null,
-    _indices:null,
-    _texCoordinateBuffer:null,
-    _verticesBuffer:null,
-    _indicesBuffer:null,
-    ctor:function (gridSize, texture, flipped) {
-        cc.GridBase.prototype.ctor.call(this);
-        this._texCoordinates=null;
-        this._vertices=null;
-        this._originalVertices=null;
-        this._indices=null;
-        this._texCoordinateBuffer=null;
-        this._verticesBuffer=null;
-        this._indicesBuffer=null;
-        if(gridSize !== undefined)
-            this.initWithSize(gridSize, texture, flipped);
-    },
-    tile:function (pos) {
-        return this.getTile(pos);
-    },
-    getTile: function(pos){
-        if(pos.x !== (0| pos.x) || pos.y !== (0| pos.y))
-            cc.log("cc.TiledGrid3D.tile() : Numbers must be integers");
-        var idx = (this._gridSize.height * pos.x + pos.y) * 4 * 3;
-        var locVertices = this._vertices;
-        return new cc.Quad3(new cc.Vertex3F(locVertices[idx], locVertices[idx + 1], locVertices[idx + 2]),
-            new cc.Vertex3F(locVertices[idx + 3], locVertices[idx + 4], locVertices[idx + 5]),
-            new cc.Vertex3F(locVertices[idx + 6 ], locVertices[idx + 7], locVertices[idx + 8]),
-            new cc.Vertex3F(locVertices[idx + 9], locVertices[idx + 10], locVertices[idx + 11]));
-    },
-    getOriginalTile:function (pos) {
-        if(pos.x !== (0| pos.x) || pos.y !== (0| pos.y))
-            cc.log("cc.TiledGrid3D.originalTile() : Numbers must be integers");
-        var idx = (this._gridSize.height * pos.x + pos.y) * 4 * 3;
-        var locOriginalVertices = this._originalVertices;
-        return new cc.Quad3(new cc.Vertex3F(locOriginalVertices[idx], locOriginalVertices[idx + 1], locOriginalVertices[idx + 2]),
-            new cc.Vertex3F(locOriginalVertices[idx + 3], locOriginalVertices[idx + 4], locOriginalVertices[idx + 5]),
-            new cc.Vertex3F(locOriginalVertices[idx + 6 ], locOriginalVertices[idx + 7], locOriginalVertices[idx + 8]),
-            new cc.Vertex3F(locOriginalVertices[idx + 9], locOriginalVertices[idx + 10], locOriginalVertices[idx + 11]));
-    },
-    originalTile: function(pos) {
-        return this.getOriginalTile(pos);
-    },
-    setTile:function (pos, coords) {
-        if(pos.x !== (0| pos.x) || pos.y !== (0| pos.y))
-            cc.log("cc.TiledGrid3D.setTile() : Numbers must be integers");
-        var idx = (this._gridSize.height * pos.x + pos.y) * 12;
-        var locVertices = this._vertices;
-        locVertices[idx] = coords.bl.x;
-        locVertices[idx + 1] = coords.bl.y;
-        locVertices[idx + 2] = coords.bl.z;
-        locVertices[idx + 3] = coords.br.x;
-        locVertices[idx + 4] = coords.br.y;
-        locVertices[idx + 5] = coords.br.z;
-        locVertices[idx + 6] = coords.tl.x;
-        locVertices[idx + 7] = coords.tl.y;
-        locVertices[idx + 8] = coords.tl.z;
-        locVertices[idx + 9] = coords.tr.x;
-        locVertices[idx + 10] = coords.tr.y;
-        locVertices[idx + 11] = coords.tr.z;
-        this._dirty = true;
-    },
-    blit: function (target) {
-        var n = this._gridSize.width * this._gridSize.height;
-        this._shaderProgram.use();
-        this._shaderProgram._setUniformForMVPMatrixWithMat4(target._renderCmd._stackMatrix);
-        var gl = cc._renderContext, locDirty = this._dirty;
-        cc.glEnableVertexAttribs(cc.VERTEX_ATTRIB_FLAG_POSITION | cc.VERTEX_ATTRIB_FLAG_TEX_COORDS);
-        gl.bindBuffer(gl.ARRAY_BUFFER, this._verticesBuffer);
-        if (locDirty)
-            gl.bufferData(gl.ARRAY_BUFFER, this._vertices, gl.DYNAMIC_DRAW);
-        gl.vertexAttribPointer(cc.VERTEX_ATTRIB_POSITION, 3, gl.FLOAT, false, 0, this._vertices);
-        gl.bindBuffer(gl.ARRAY_BUFFER, this._texCoordinateBuffer);
-        if (locDirty)
-            gl.bufferData(gl.ARRAY_BUFFER, this._texCoordinates, gl.DYNAMIC_DRAW);
-        gl.vertexAttribPointer(cc.VERTEX_ATTRIB_TEX_COORDS, 2, gl.FLOAT, false, 0, this._texCoordinates);
-        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this._indicesBuffer);
-        if (locDirty)
-            gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, this._indices, gl.STATIC_DRAW);
-        gl.drawElements(gl.TRIANGLES, n * 6, gl.UNSIGNED_SHORT, 0);
-        if (locDirty)
-            this._dirty = false;
-        cc.incrementGLDraws(1);
-    },
-    reuse:function () {
-        if (this._reuseGrid > 0) {
-            var locVertices = this._vertices, locOriginalVertices = this._originalVertices;
-            for (var i = 0; i < locVertices.length; i++)
-                locOriginalVertices[i] = locVertices[i];
-            --this._reuseGrid;
-        }
-    },
-    calculateVertexPoints:function () {
-        var width = this._texture.pixelsWidth;
-        var height = this._texture.pixelsHeight;
-        var imageH = this._texture.getContentSizeInPixels().height;
-        var locGridSize = this._gridSize;
-        var numQuads = locGridSize.width * locGridSize.height;
-        this._vertices = new Float32Array(numQuads * 12);
-        this._texCoordinates = new Float32Array(numQuads * 8);
-        this._indices = new Uint16Array(numQuads * 6);
-        var gl = cc._renderContext;
-        if(this._verticesBuffer)
-            gl.deleteBuffer(this._verticesBuffer);
-        this._verticesBuffer = gl.createBuffer();
-        if(this._texCoordinateBuffer)
-            gl.deleteBuffer(this._texCoordinateBuffer);
-        this._texCoordinateBuffer = gl.createBuffer();
-        if(this._indicesBuffer)
-            gl.deleteBuffer(this._indicesBuffer);
-        this._indicesBuffer = gl.createBuffer();
-        var x, y, i = 0;
-        var locStep = this._step, locVertices = this._vertices, locTexCoords = this._texCoordinates, locIsTextureFlipped = this._isTextureFlipped;
-        for (x = 0; x < locGridSize.width; x++) {
-            for (y = 0; y < locGridSize.height; y++) {
-                var x1 = x * locStep.x;
-                var x2 = x1 + locStep.x;
-                var y1 = y * locStep.y;
-                var y2 = y1 + locStep.y;
-                locVertices[i * 12] = x1;
-                locVertices[i * 12 + 1] = y1;
-                locVertices[i * 12 + 2] = 0;
-                locVertices[i * 12 + 3] = x2;
-                locVertices[i * 12 + 4] = y1;
-                locVertices[i * 12 + 5] = 0;
-                locVertices[i * 12 + 6] = x1;
-                locVertices[i * 12 + 7] = y2;
-                locVertices[i * 12 + 8] = 0;
-                locVertices[i * 12 + 9] = x2;
-                locVertices[i * 12 + 10] = y2;
-                locVertices[i * 12 + 11] = 0;
-                var newY1 = y1;
-                var newY2 = y2;
-                if (locIsTextureFlipped) {
-                    newY1 = imageH - y1;
-                    newY2 = imageH - y2;
-                }
-                locTexCoords[i * 8] = x1 / width;
-                locTexCoords[i * 8 + 1] = newY1 / height;
-                locTexCoords[i * 8 + 2] = x2 / width;
-                locTexCoords[i * 8 + 3] = newY1 / height;
-                locTexCoords[i * 8 + 4] = x1 / width;
-                locTexCoords[i * 8 + 5] = newY2 / height;
-                locTexCoords[i * 8 + 6] = x2 / width;
-                locTexCoords[i * 8 + 7] = newY2 / height;
-                i++;
-            }
-        }
-        var locIndices = this._indices;
-        for (x = 0; x < numQuads; x++) {
-            locIndices[x * 6 + 0] = (x * 4 + 0);
-            locIndices[x * 6 + 1] = (x * 4 + 1);
-            locIndices[x * 6 + 2] = (x * 4 + 2);
-            locIndices[x * 6 + 3] = (x * 4 + 1);
-            locIndices[x * 6 + 4] = (x * 4 + 2);
-            locIndices[x * 6 + 5] = (x * 4 + 3);
-        }
-        this._originalVertices = new Float32Array(this._vertices);
-        gl.bindBuffer(gl.ARRAY_BUFFER, this._verticesBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, this._vertices, gl.DYNAMIC_DRAW);
-        gl.bindBuffer(gl.ARRAY_BUFFER, this._texCoordinateBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, this._texCoordinates, gl.DYNAMIC_DRAW);
-        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this._indicesBuffer);
-        gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, this._indices, gl.DYNAMIC_DRAW);
-        this._dirty = true;
-    }
-});
-cc.TiledGrid3D.create = function (gridSize, texture, flipped) {
-    return new cc.TiledGrid3D(gridSize, texture, flipped);
-};
-cc.Grabber = cc.Class.extend({
-    _FBO:null,
-    _oldFBO:null,
-    _oldClearColor:null,
-    _gl:null,
-    ctor:function () {
-        cc._checkWebGLRenderMode();
-        this._gl = cc._renderContext;
-        this._oldClearColor = [0, 0, 0, 0];
-        this._oldFBO = null;
-        this._FBO = this._gl.createFramebuffer();
-    },
-    grab:function (texture) {
-        var locGL = this._gl;
-        this._oldFBO = locGL.getParameter(locGL.FRAMEBUFFER_BINDING);
-        locGL.bindFramebuffer(locGL.FRAMEBUFFER, this._FBO);
-        locGL.framebufferTexture2D(locGL.FRAMEBUFFER, locGL.COLOR_ATTACHMENT0, locGL.TEXTURE_2D, texture._webTextureObj, 0);
-        var status = locGL.checkFramebufferStatus(locGL.FRAMEBUFFER);
-        if (status !== locGL.FRAMEBUFFER_COMPLETE)
-            cc.log("Frame Grabber: could not attach texture to frmaebuffer");
-        locGL.bindFramebuffer(locGL.FRAMEBUFFER, this._oldFBO);
-    },
-    beforeRender:function (texture) {
-        var locGL = this._gl;
-        this._oldFBO = locGL.getParameter(locGL.FRAMEBUFFER_BINDING);
-        locGL.bindFramebuffer(locGL.FRAMEBUFFER, this._FBO);
-        this._oldClearColor = locGL.getParameter(locGL.COLOR_CLEAR_VALUE);
-        locGL.clearColor(0, 0, 0, 0);
-        locGL.clear(locGL.COLOR_BUFFER_BIT | locGL.DEPTH_BUFFER_BIT);
-    },
-    afterRender:function (texture) {
-        var locGL = this._gl;
-        locGL.bindFramebuffer(locGL.FRAMEBUFFER, this._oldFBO);
-        locGL.colorMask(true, true, true, true);
-    },
-    destroy:function(){
-        this._gl.deleteFramebuffer(this._FBO);
-    }
-});
 cc.ProgressTimer = cc.Node.extend({
     _type:null,
     _percentage:0.0,
@@ -27470,656 +27893,1124 @@ cc.ProgressFromTo.create = cc.progressFromTo;
         this._vertexDataDirty = true;
     };
 })();
-cc.Codec = {name:'Jacob__Codec'};
-cc.unzip = function () {
-    return cc.Codec.GZip.gunzip.apply(cc.Codec.GZip, arguments);
-};
-cc.unzipBase64 = function () {
-    var tmpInput = cc.Codec.Base64.decode.apply(cc.Codec.Base64, arguments);
-    return   cc.Codec.GZip.gunzip.apply(cc.Codec.GZip, [tmpInput]);
-};
-cc.unzipBase64AsArray = function (input, bytes) {
-    bytes = bytes || 1;
-    var dec = this.unzipBase64(input),
-        ar = [], i, j, len;
-    for (i = 0, len = dec.length / bytes; i < len; i++) {
-        ar[i] = 0;
-        for (j = bytes - 1; j >= 0; --j) {
-            ar[i] += dec.charCodeAt((i * bytes) + j) << (j * 8);
-        }
-    }
-    return ar;
-};
-cc.unzipAsArray = function (input, bytes) {
-    bytes = bytes || 1;
-    var dec = this.unzip(input),
-        ar = [], i, j, len;
-    for (i = 0, len = dec.length / bytes; i < len; i++) {
-        ar[i] = 0;
-        for (j = bytes - 1; j >= 0; --j) {
-            ar[i] += dec.charCodeAt((i * bytes) + j) << (j * 8);
-        }
-    }
-    return ar;
-};
-cc.StringToArray = function (input) {
-    var tmp = input.split(","), ar = [], i;
-    for (i = 0; i < tmp.length; i++) {
-        ar.push(parseInt(tmp[i]));
-    }
-    return ar;
-};
-cc.Codec.Base64 = {name:'Jacob__Codec__Base64'};
-cc.Codec.Base64._keyStr = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
-cc.Codec.Base64.decode = function Jacob__Codec__Base64__decode(input) {
-    var output = [],
-        chr1, chr2, chr3,
-        enc1, enc2, enc3, enc4,
-        i = 0;
-    input = input.replace(/[^A-Za-z0-9\+\/\=]/g, "");
-    while (i < input.length) {
-        enc1 = this._keyStr.indexOf(input.charAt(i++));
-        enc2 = this._keyStr.indexOf(input.charAt(i++));
-        enc3 = this._keyStr.indexOf(input.charAt(i++));
-        enc4 = this._keyStr.indexOf(input.charAt(i++));
-        chr1 = (enc1 << 2) | (enc2 >> 4);
-        chr2 = ((enc2 & 15) << 4) | (enc3 >> 2);
-        chr3 = ((enc3 & 3) << 6) | enc4;
-        output.push(String.fromCharCode(chr1));
-        if (enc3 !== 64) {
-            output.push(String.fromCharCode(chr2));
-        }
-        if (enc4 !== 64) {
-            output.push(String.fromCharCode(chr3));
-        }
-    }
-    output = output.join('');
-    return output;
-};
-cc.Codec.Base64.decodeAsArray = function Jacob__Codec__Base64___decodeAsArray(input, bytes) {
-    var dec = this.decode(input),
-        ar = [], i, j, len;
-    for (i = 0, len = dec.length / bytes; i < len; i++) {
-        ar[i] = 0;
-        for (j = bytes - 1; j >= 0; --j) {
-            ar[i] += dec.charCodeAt((i * bytes) + j) << (j * 8);
-        }
-    }
-    return ar;
-};
-cc.uint8ArrayToUint32Array = function(uint8Arr){
-    if(uint8Arr.length % 4 !== 0)
-        return null;
-    var arrLen = uint8Arr.length /4;
-    var retArr = window.Uint32Array? new Uint32Array(arrLen) : [];
-    for(var i = 0; i < arrLen; i++){
-        var offset = i * 4;
-        retArr[i] = uint8Arr[offset]  + uint8Arr[offset + 1] * (1 << 8) + uint8Arr[offset + 2] * (1 << 16) + uint8Arr[offset + 3] * (1<<24);
-    }
-    return retArr;
-};
-cc.Codec.GZip = function Jacob__GZip(data) {
-    this.data = data;
-    this.debug = false;
-    this.gpflags = undefined;
-    this.files = 0;
-    this.unzipped = [];
-    this.buf32k = new Array(32768);
-    this.bIdx = 0;
-    this.modeZIP = false;
-    this.bytepos = 0;
-    this.bb = 1;
-    this.bits = 0;
-    this.nameBuf = [];
-    this.fileout = undefined;
-    this.literalTree = new Array(cc.Codec.GZip.LITERALS);
-    this.distanceTree = new Array(32);
-    this.treepos = 0;
-    this.Places = null;
-    this.len = 0;
-    this.fpos = new Array(17);
-    this.fpos[0] = 0;
-    this.flens = undefined;
-    this.fmax = undefined;
-};
-cc.Codec.GZip.gunzip = function (string) {
-    if (string.constructor === Array) {
-    } else if (string.constructor === String) {
-    }
-    var gzip = new cc.Codec.GZip(string);
-    return gzip.gunzip()[0][0];
-};
-cc.Codec.GZip.HufNode = function () {
-    this.b0 = 0;
-    this.b1 = 0;
-    this.jump = null;
-    this.jumppos = -1;
-};
-cc.Codec.GZip.LITERALS = 288;
-cc.Codec.GZip.NAMEMAX = 256;
-cc.Codec.GZip.bitReverse = [
-    0x00, 0x80, 0x40, 0xc0, 0x20, 0xa0, 0x60, 0xe0,
-    0x10, 0x90, 0x50, 0xd0, 0x30, 0xb0, 0x70, 0xf0,
-    0x08, 0x88, 0x48, 0xc8, 0x28, 0xa8, 0x68, 0xe8,
-    0x18, 0x98, 0x58, 0xd8, 0x38, 0xb8, 0x78, 0xf8,
-    0x04, 0x84, 0x44, 0xc4, 0x24, 0xa4, 0x64, 0xe4,
-    0x14, 0x94, 0x54, 0xd4, 0x34, 0xb4, 0x74, 0xf4,
-    0x0c, 0x8c, 0x4c, 0xcc, 0x2c, 0xac, 0x6c, 0xec,
-    0x1c, 0x9c, 0x5c, 0xdc, 0x3c, 0xbc, 0x7c, 0xfc,
-    0x02, 0x82, 0x42, 0xc2, 0x22, 0xa2, 0x62, 0xe2,
-    0x12, 0x92, 0x52, 0xd2, 0x32, 0xb2, 0x72, 0xf2,
-    0x0a, 0x8a, 0x4a, 0xca, 0x2a, 0xaa, 0x6a, 0xea,
-    0x1a, 0x9a, 0x5a, 0xda, 0x3a, 0xba, 0x7a, 0xfa,
-    0x06, 0x86, 0x46, 0xc6, 0x26, 0xa6, 0x66, 0xe6,
-    0x16, 0x96, 0x56, 0xd6, 0x36, 0xb6, 0x76, 0xf6,
-    0x0e, 0x8e, 0x4e, 0xce, 0x2e, 0xae, 0x6e, 0xee,
-    0x1e, 0x9e, 0x5e, 0xde, 0x3e, 0xbe, 0x7e, 0xfe,
-    0x01, 0x81, 0x41, 0xc1, 0x21, 0xa1, 0x61, 0xe1,
-    0x11, 0x91, 0x51, 0xd1, 0x31, 0xb1, 0x71, 0xf1,
-    0x09, 0x89, 0x49, 0xc9, 0x29, 0xa9, 0x69, 0xe9,
-    0x19, 0x99, 0x59, 0xd9, 0x39, 0xb9, 0x79, 0xf9,
-    0x05, 0x85, 0x45, 0xc5, 0x25, 0xa5, 0x65, 0xe5,
-    0x15, 0x95, 0x55, 0xd5, 0x35, 0xb5, 0x75, 0xf5,
-    0x0d, 0x8d, 0x4d, 0xcd, 0x2d, 0xad, 0x6d, 0xed,
-    0x1d, 0x9d, 0x5d, 0xdd, 0x3d, 0xbd, 0x7d, 0xfd,
-    0x03, 0x83, 0x43, 0xc3, 0x23, 0xa3, 0x63, 0xe3,
-    0x13, 0x93, 0x53, 0xd3, 0x33, 0xb3, 0x73, 0xf3,
-    0x0b, 0x8b, 0x4b, 0xcb, 0x2b, 0xab, 0x6b, 0xeb,
-    0x1b, 0x9b, 0x5b, 0xdb, 0x3b, 0xbb, 0x7b, 0xfb,
-    0x07, 0x87, 0x47, 0xc7, 0x27, 0xa7, 0x67, 0xe7,
-    0x17, 0x97, 0x57, 0xd7, 0x37, 0xb7, 0x77, 0xf7,
-    0x0f, 0x8f, 0x4f, 0xcf, 0x2f, 0xaf, 0x6f, 0xef,
-    0x1f, 0x9f, 0x5f, 0xdf, 0x3f, 0xbf, 0x7f, 0xff
-];
-cc.Codec.GZip.cplens = [
-    3, 4, 5, 6, 7, 8, 9, 10, 11, 13, 15, 17, 19, 23, 27, 31,
-    35, 43, 51, 59, 67, 83, 99, 115, 131, 163, 195, 227, 258, 0, 0
-];
-cc.Codec.GZip.cplext = [
-    0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2,
-    3, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5, 0, 99, 99
-];
-cc.Codec.GZip.cpdist = [
-    0x0001, 0x0002, 0x0003, 0x0004, 0x0005, 0x0007, 0x0009, 0x000d,
-    0x0011, 0x0019, 0x0021, 0x0031, 0x0041, 0x0061, 0x0081, 0x00c1,
-    0x0101, 0x0181, 0x0201, 0x0301, 0x0401, 0x0601, 0x0801, 0x0c01,
-    0x1001, 0x1801, 0x2001, 0x3001, 0x4001, 0x6001
-];
-cc.Codec.GZip.cpdext = [
-    0, 0, 0, 0, 1, 1, 2, 2,
-    3, 3, 4, 4, 5, 5, 6, 6,
-    7, 7, 8, 8, 9, 9, 10, 10,
-    11, 11, 12, 12, 13, 13
-];
-cc.Codec.GZip.border = [16, 17, 18, 0, 8, 7, 9, 6, 10, 5, 11, 4, 12, 3, 13, 2, 14, 1, 15];
-cc.Codec.GZip.prototype.gunzip = function () {
-    this.outputArr = [];
-    this.nextFile();
-    return this.unzipped;
-};
-cc.Codec.GZip.prototype.readByte = function () {
-    this.bits += 8;
-    if (this.bytepos < this.data.length) {
-        return this.data.charCodeAt(this.bytepos++);
-    } else {
-        return -1;
-    }
-};
-cc.Codec.GZip.prototype.byteAlign = function () {
-    this.bb = 1;
-};
-cc.Codec.GZip.prototype.readBit = function () {
-    var carry;
-    this.bits++;
-    carry = (this.bb & 1);
-    this.bb >>= 1;
-    if (this.bb === 0) {
-        this.bb = this.readByte();
-        carry = (this.bb & 1);
-        this.bb = (this.bb >> 1) | 0x80;
-    }
-    return carry;
-};
-cc.Codec.GZip.prototype.readBits = function (a) {
-    var res = 0,
-        i = a;
-    while (i--) res = (res << 1) | this.readBit();
-    if (a) res = cc.Codec.GZip.bitReverse[res] >> (8 - a);
-    return res;
-};
-cc.Codec.GZip.prototype.flushBuffer = function () {
-    this.bIdx = 0;
-};
-cc.Codec.GZip.prototype.addBuffer = function (a) {
-    this.buf32k[this.bIdx++] = a;
-    this.outputArr.push(String.fromCharCode(a));
-    if (this.bIdx === 0x8000) this.bIdx = 0;
-};
-cc.Codec.GZip.prototype.IsPat = function () {
-    while (1) {
-        if (this.fpos[this.len] >= this.fmax)       return -1;
-        if (this.flens[this.fpos[this.len]] === this.len) return this.fpos[this.len]++;
-        this.fpos[this.len]++;
-    }
-};
-cc.Codec.GZip.prototype.Rec = function () {
-    var curplace = this.Places[this.treepos];
-    var tmp;
-    if (this.len === 17) {
-        return -1;
-    }
-    this.treepos++;
-    this.len++;
-    tmp = this.IsPat();
-    if (tmp >= 0) {
-        curplace.b0 = tmp;
-    } else {
-        curplace.b0 = 0x8000;
-        if (this.Rec()) return -1;
-    }
-    tmp = this.IsPat();
-    if (tmp >= 0) {
-        curplace.b1 = tmp;
-        curplace.jump = null;
-    } else {
-        curplace.b1 = 0x8000;
-        curplace.jump = this.Places[this.treepos];
-        curplace.jumppos = this.treepos;
-        if (this.Rec()) return -1;
-    }
-    this.len--;
-    return 0;
-};
-cc.Codec.GZip.prototype.CreateTree = function (currentTree, numval, lengths, show) {
-    var i;
-    this.Places = currentTree;
-    this.treepos = 0;
-    this.flens = lengths;
-    this.fmax = numval;
-    for (i = 0; i < 17; i++) this.fpos[i] = 0;
-    this.len = 0;
-    if (this.Rec()) {
-        return -1;
-    }
-    return 0;
-};
-cc.Codec.GZip.prototype.DecodeValue = function (currentTree) {
-    var len, i,
-        xtreepos = 0,
-        X = currentTree[xtreepos],
-        b;
-    while (1) {
-        b = this.readBit();
-        if (b) {
-            if (!(X.b1 & 0x8000)) {
-                return X.b1;
-            }
-            X = X.jump;
-            len = currentTree.length;
-            for (i = 0; i < len; i++) {
-                if (currentTree[i] === X) {
-                    xtreepos = i;
-                    break;
-                }
-            }
+cc.SCENE_FADE = 4208917214;
+cc.TRANSITION_ORIENTATION_LEFT_OVER = 0;
+cc.TRANSITION_ORIENTATION_RIGHT_OVER = 1;
+cc.TRANSITION_ORIENTATION_UP_OVER = 0;
+cc.TRANSITION_ORIENTATION_DOWN_OVER = 1;
+cc.TransitionScene = cc.Scene.extend({
+    _inScene:null,
+    _outScene:null,
+    _duration:null,
+    _isInSceneOnTop:false,
+    _isSendCleanupToScene:false,
+    _className:"TransitionScene",
+    ctor:function (t, scene) {
+        cc.Scene.prototype.ctor.call(this);
+        if(t !== undefined && scene !== undefined)
+            this.initWithDuration(t, scene);
+    },
+    _setNewScene:function (dt) {
+        this.unschedule(this._setNewScene);
+        var director = cc.director;
+        this._isSendCleanupToScene = director.isSendCleanupToScene();
+        director.runScene(this._inScene);
+        cc.eventManager.setEnabled(true);
+        this._outScene.visible = true;
+    },
+    _sceneOrder:function () {
+        this._isInSceneOnTop = true;
+    },
+    visit:function () {
+        if (this._isInSceneOnTop) {
+            this._outScene.visit();
+            this._inScene.visit();
         } else {
-            if (!(X.b0 & 0x8000)) {
-                return X.b0;
-            }
-            xtreepos++;
-            X = currentTree[xtreepos];
+            this._inScene.visit();
+            this._outScene.visit();
         }
+        cc.Node.prototype.visit.call(this);
+    },
+    onEnter:function () {
+        cc.Node.prototype.onEnter.call(this);
+        cc.eventManager.setEnabled(false);
+        this._outScene.onExitTransitionDidStart();
+        this._inScene.onEnter();
+    },
+    onExit:function () {
+        cc.Node.prototype.onExit.call(this);
+        cc.eventManager.setEnabled(true);
+        this._outScene.onExit();
+        this._inScene.onEnterTransitionDidFinish();
+    },
+    cleanup:function () {
+        cc.Node.prototype.cleanup.call(this);
+        if (this._isSendCleanupToScene)
+            this._outScene.cleanup();
+    },
+    initWithDuration:function (t, scene) {
+        if(!scene)
+            throw "cc.TransitionScene.initWithDuration(): Argument scene must be non-nil";
+        if (this.init()) {
+            this._duration = t;
+            this.attr({
+	            x: 0,
+	            y: 0,
+	            anchorX: 0,
+	            anchorY: 0
+            });
+            this._inScene = scene;
+            this._outScene = cc.director.getRunningScene();
+            if (!this._outScene) {
+                this._outScene = new cc.Scene();
+                this._outScene.init();
+            }
+            if(this._inScene === this._outScene)
+                throw "cc.TransitionScene.initWithDuration(): Incoming scene must be different from the outgoing scene";
+            this._sceneOrder();
+            return true;
+        } else {
+            return false;
+        }
+    },
+    finish:function () {
+        this._inScene.attr({
+			visible: true,
+	        x: 0,
+	        y: 0,
+	        scale: 1.0,
+	        rotation: 0.0
+        });
+        if(cc._renderType === cc._RENDER_TYPE_WEBGL)
+            this._inScene.getCamera().restore();
+        this._outScene.attr({
+	        visible: false,
+	        x: 0,
+	        y: 0,
+	        scale: 1.0,
+	        rotation: 0.0
+        });
+        if(cc._renderType === cc._RENDER_TYPE_WEBGL)
+            this._outScene.getCamera().restore();
+        this.schedule(this._setNewScene, 0);
+    },
+    hideOutShowIn:function () {
+        this._inScene.visible = true;
+        this._outScene.visible = false;
     }
-    return -1;
+});
+cc.TransitionScene.create = function (t, scene) {
+    return new cc.TransitionScene(t, scene);
 };
-cc.Codec.GZip.prototype.DeflateLoop = function () {
-    var last, c, type, i, len;
-    do {
-        last = this.readBit();
-        type = this.readBits(2);
-        if (type === 0) {
-            var blockLen, cSum;
-            this.byteAlign();
-            blockLen = this.readByte();
-            blockLen |= (this.readByte() << 8);
-            cSum = this.readByte();
-            cSum |= (this.readByte() << 8);
-            if (((blockLen ^ ~cSum) & 0xffff)) {
-                document.write("BlockLen checksum mismatch\n");
-            }
-            while (blockLen--) {
-                c = this.readByte();
-                this.addBuffer(c);
-            }
-        } else if (type === 1) {
-            var j;
-            while (1) {
-                j = (cc.Codec.GZip.bitReverse[this.readBits(7)] >> 1);
-                if (j > 23) {
-                    j = (j << 1) | this.readBit();
-                    if (j > 199) {
-                        j -= 128;
-                        j = (j << 1) | this.readBit();
-                    } else {
-                        j -= 48;
-                        if (j > 143) {
-                            j = j + 136;
-                        }
-                    }
-                } else {
-                    j += 256;
-                }
-                if (j < 256) {
-                    this.addBuffer(j);
-                } else if (j === 256) {
-                    break;
-                } else {
-                    var len, dist;
-                    j -= 256 + 1;
-                    len = this.readBits(cc.Codec.GZip.cplext[j]) + cc.Codec.GZip.cplens[j];
-                    j = cc.Codec.GZip.bitReverse[this.readBits(5)] >> 3;
-                    if (cc.Codec.GZip.cpdext[j] > 8) {
-                        dist = this.readBits(8);
-                        dist |= (this.readBits(cc.Codec.GZip.cpdext[j] - 8) << 8);
-                    } else {
-                        dist = this.readBits(cc.Codec.GZip.cpdext[j]);
-                    }
-                    dist += cc.Codec.GZip.cpdist[j];
-                    for (j = 0; j < len; j++) {
-                        var c = this.buf32k[(this.bIdx - dist) & 0x7fff];
-                        this.addBuffer(c);
-                    }
-                }
-            }
-        } else if (type === 2) {
-            var j, n, literalCodes, distCodes, lenCodes;
-            var ll = new Array(288 + 32);
-            literalCodes = 257 + this.readBits(5);
-            distCodes = 1 + this.readBits(5);
-            lenCodes = 4 + this.readBits(4);
-            for (j = 0; j < 19; j++) {
-                ll[j] = 0;
-            }
-            for (j = 0; j < lenCodes; j++) {
-                ll[cc.Codec.GZip.border[j]] = this.readBits(3);
-            }
-            len = this.distanceTree.length;
-            for (i = 0; i < len; i++) this.distanceTree[i] = new cc.Codec.GZip.HufNode();
-            if (this.CreateTree(this.distanceTree, 19, ll, 0)) {
-                this.flushBuffer();
-                return 1;
-            }
-            n = literalCodes + distCodes;
-            i = 0;
-            var z = -1;
-            while (i < n) {
-                z++;
-                j = this.DecodeValue(this.distanceTree);
-                if (j < 16) {
-                    ll[i++] = j;
-                } else if (j === 16) {
-                    var l;
-                    j = 3 + this.readBits(2);
-                    if (i + j > n) {
-                        this.flushBuffer();
-                        return 1;
-                    }
-                    l = i ? ll[i - 1] : 0;
-                    while (j--) {
-                        ll[i++] = l;
-                    }
-                } else {
-                    if (j === 17) {
-                        j = 3 + this.readBits(3);
-                    } else {
-                        j = 11 + this.readBits(7);
-                    }
-                    if (i + j > n) {
-                        this.flushBuffer();
-                        return 1;
-                    }
-                    while (j--) {
-                        ll[i++] = 0;
-                    }
-                }
-            }
-            len = this.literalTree.length;
-            for (i = 0; i < len; i++)
-                this.literalTree[i] = new cc.Codec.GZip.HufNode();
-            if (this.CreateTree(this.literalTree, literalCodes, ll, 0)) {
-                this.flushBuffer();
-                return 1;
-            }
-            len = this.literalTree.length;
-            for (i = 0; i < len; i++) this.distanceTree[i] = new cc.Codec.GZip.HufNode();
-            var ll2 = new Array();
-            for (i = literalCodes; i < ll.length; i++) ll2[i - literalCodes] = ll[i];
-            if (this.CreateTree(this.distanceTree, distCodes, ll2, 0)) {
-                this.flushBuffer();
-                return 1;
-            }
-            while (1) {
-                j = this.DecodeValue(this.literalTree);
-                if (j >= 256) {
-                    var len, dist;
-                    j -= 256;
-                    if (j === 0) {
-                        break;
-                    }
-                    j--;
-                    len = this.readBits(cc.Codec.GZip.cplext[j]) + cc.Codec.GZip.cplens[j];
-                    j = this.DecodeValue(this.distanceTree);
-                    if (cc.Codec.GZip.cpdext[j] > 8) {
-                        dist = this.readBits(8);
-                        dist |= (this.readBits(cc.Codec.GZip.cpdext[j] - 8) << 8);
-                    } else {
-                        dist = this.readBits(cc.Codec.GZip.cpdext[j]);
-                    }
-                    dist += cc.Codec.GZip.cpdist[j];
-                    while (len--) {
-                        var c = this.buf32k[(this.bIdx - dist) & 0x7fff];
-                        this.addBuffer(c);
-                    }
-                } else {
-                    this.addBuffer(j);
-                }
-            }
+cc.TransitionSceneOriented = cc.TransitionScene.extend({
+    _orientation:0,
+    ctor:function (t, scene, orientation) {
+        cc.TransitionScene.prototype.ctor.call(this);
+        orientation != undefined && this.initWithDuration(t, scene, orientation);
+    },
+    initWithDuration:function (t, scene, orientation) {
+        if (cc.TransitionScene.prototype.initWithDuration.call(this, t, scene)) {
+            this._orientation = orientation;
         }
-    } while (!last);
-    this.flushBuffer();
-    this.byteAlign();
-    return 0;
+        return true;
+    }
+});
+cc.TransitionSceneOriented.create = function (t, scene, orientation) {
+    return new cc.TransitionSceneOriented(t, scene, orientation);
 };
-cc.Codec.GZip.prototype.unzipFile = function (name) {
-    var i;
-    this.gunzip();
-    for (i = 0; i < this.unzipped.length; i++) {
-        if (this.unzipped[i][1] === name) {
-            return this.unzipped[i][0];
-        }
+cc.TransitionRotoZoom = cc.TransitionScene.extend({
+    ctor:function (t, scene) {
+        cc.TransitionScene.prototype.ctor.call(this);
+        scene && this.initWithDuration(t, scene);
+    },
+    onEnter:function () {
+        cc.TransitionScene.prototype.onEnter.call(this);
+	    this._inScene.attr({
+		    scale: 0.001,
+		    anchorX: 0.5,
+		    anchorY: 0.5
+	    });
+	    this._outScene.attr({
+		    scale: 1.0,
+		    anchorX: 0.5,
+		    anchorY: 0.5
+	    });
+        var rotoZoom = cc.sequence(
+            cc.spawn(cc.scaleBy(this._duration / 2, 0.001),
+                cc.rotateBy(this._duration / 2, 360 * 2)),
+            cc.delayTime(this._duration / 2));
+        this._outScene.runAction(rotoZoom);
+        this._inScene.runAction(
+            cc.sequence(rotoZoom.reverse(),
+                cc.callFunc(this.finish, this)));
     }
+});
+cc.TransitionRotoZoom.create = function (t, scene) {
+    return new cc.TransitionRotoZoom(t, scene);
 };
-cc.Codec.GZip.prototype.nextFile = function () {
-    this.outputArr = [];
-    this.modeZIP = false;
-    var tmp = [];
-    tmp[0] = this.readByte();
-    tmp[1] = this.readByte();
-    if (tmp[0] === 0x78 && tmp[1] === 0xda) {
-        this.DeflateLoop();
-        this.unzipped[this.files] = [this.outputArr.join(''), "geonext.gxt"];
-        this.files++;
+cc.TransitionJumpZoom = cc.TransitionScene.extend({
+    ctor:function (t, scene) {
+        cc.TransitionScene.prototype.ctor.call(this);
+        scene && this.initWithDuration(t, scene);
+    },
+    onEnter:function () {
+        cc.TransitionScene.prototype.onEnter.call(this);
+        var winSize = cc.director.getWinSize();
+	    this._inScene.attr({
+		    scale: 0.5,
+		    x: winSize.width,
+		    y: 0,
+		    anchorX: 0.5,
+		    anchorY: 0.5
+	    });
+        this._outScene.anchorX = 0.5;
+	    this._outScene.anchorY = 0.5;
+        var jump = cc.jumpBy(this._duration / 4, cc.p(-winSize.width, 0), winSize.width / 4, 2);
+        var scaleIn = cc.scaleTo(this._duration / 4, 1.0);
+        var scaleOut = cc.scaleTo(this._duration / 4, 0.5);
+        var jumpZoomOut = cc.sequence(scaleOut, jump);
+        var jumpZoomIn = cc.sequence(jump, scaleIn);
+        var delay = cc.delayTime(this._duration / 2);
+        this._outScene.runAction(jumpZoomOut);
+        this._inScene.runAction(cc.sequence(delay, jumpZoomIn, cc.callFunc(this.finish, this)));
     }
-    if (tmp[0] === 0x1f && tmp[1] === 0x8b) {
-        this.skipdir();
-        this.unzipped[this.files] = [this.outputArr.join(''), "file"];
-        this.files++;
-    }
-    if (tmp[0] === 0x50 && tmp[1] === 0x4b) {
-        this.modeZIP = true;
-        tmp[2] = this.readByte();
-        tmp[3] = this.readByte();
-        if (tmp[2] === 0x03 && tmp[3] === 0x04) {
-            tmp[0] = this.readByte();
-            tmp[1] = this.readByte();
-            this.gpflags = this.readByte();
-            this.gpflags |= (this.readByte() << 8);
-            var method = this.readByte();
-            method |= (this.readByte() << 8);
-            this.readByte();
-            this.readByte();
-            this.readByte();
-            this.readByte();
-            var compSize = this.readByte();
-            compSize |= (this.readByte() << 8);
-            compSize |= (this.readByte() << 16);
-            compSize |= (this.readByte() << 24);
-            var size = this.readByte();
-            size |= (this.readByte() << 8);
-            size |= (this.readByte() << 16);
-            size |= (this.readByte() << 24);
-            var filelen = this.readByte();
-            filelen |= (this.readByte() << 8);
-            var extralen = this.readByte();
-            extralen |= (this.readByte() << 8);
-            i = 0;
-            this.nameBuf = [];
-            while (filelen--) {
-                var c = this.readByte();
-                if (c === "/" | c === ":") {
-                    i = 0;
-                } else if (i < cc.Codec.GZip.NAMEMAX - 1) {
-                    this.nameBuf[i++] = String.fromCharCode(c);
-                }
-            }
-            if (!this.fileout) this.fileout = this.nameBuf;
-            var i = 0;
-            while (i < extralen) {
-                c = this.readByte();
-                i++;
-            }
-            if (method === 8) {
-                this.DeflateLoop();
-                this.unzipped[this.files] = [this.outputArr.join(''), this.nameBuf.join('')];
-                this.files++;
-            }
-            this.skipdir();
-        }
-    }
+});
+cc.TransitionJumpZoom.create = function (t, scene) {
+    return new cc.TransitionJumpZoom(t, scene);
 };
-cc.Codec.GZip.prototype.skipdir = function () {
-    var tmp = [];
-    var compSize, size, os, i, c;
-    if ((this.gpflags & 8)) {
-        tmp[0] = this.readByte();
-        tmp[1] = this.readByte();
-        tmp[2] = this.readByte();
-        tmp[3] = this.readByte();
-        compSize = this.readByte();
-        compSize |= (this.readByte() << 8);
-        compSize |= (this.readByte() << 16);
-        compSize |= (this.readByte() << 24);
-        size = this.readByte();
-        size |= (this.readByte() << 8);
-        size |= (this.readByte() << 16);
-        size |= (this.readByte() << 24);
+cc.TransitionMoveInL = cc.TransitionScene.extend({
+    ctor:function (t, scene) {
+        cc.TransitionScene.prototype.ctor.call(this);
+        scene && this.initWithDuration(t, scene);
+    },
+    onEnter:function () {
+        cc.TransitionScene.prototype.onEnter.call(this);
+        this.initScenes();
+        var action = this.action();
+        this._inScene.runAction(
+            cc.sequence(this.easeActionWithAction(action), cc.callFunc(this.finish, this))
+        );
+    },
+    initScenes:function () {
+        this._inScene.setPosition(-cc.director.getWinSize().width, 0);
+    },
+    action:function () {
+        return cc.moveTo(this._duration, cc.p(0, 0));
+    },
+    easeActionWithAction:function (action) {
+        return new cc.EaseOut(action, 2.0);
     }
-    if (this.modeZIP) this.nextFile();
-    tmp[0] = this.readByte();
-    if (tmp[0] !== 8) {
-        return 0;
-    }
-    this.gpflags = this.readByte();
-    this.readByte();
-    this.readByte();
-    this.readByte();
-    this.readByte();
-    this.readByte();
-    os = this.readByte();
-    if ((this.gpflags & 4)) {
-        tmp[0] = this.readByte();
-        tmp[2] = this.readByte();
-        this.len = tmp[0] + 256 * tmp[1];
-        for (i = 0; i < this.len; i++)
-            this.readByte();
-    }
-    if ((this.gpflags & 8)) {
-        i = 0;
-        this.nameBuf = [];
-        while (c = this.readByte()) {
-            if (c === "7" || c === ":")
-                i = 0;
-            if (i < cc.Codec.GZip.NAMEMAX - 1)
-                this.nameBuf[i++] = c;
-        }
-    }
-    if ((this.gpflags & 16)) {
-        while (c = this.readByte()) {
-        }
-    }
-    if ((this.gpflags & 2)) {
-        this.readByte();
-        this.readByte();
-    }
-    this.DeflateLoop();
-    size = this.readByte();
-    size |= (this.readByte() << 8);
-    size |= (this.readByte() << 16);
-    size |= (this.readByte() << 24);
-    if (this.modeZIP) this.nextFile();
+});
+cc.TransitionMoveInL.create = function (t, scene) {
+    return new cc.TransitionMoveInL(t, scene);
 };
-(function() {'use strict';function i(a){throw a;}var r=void 0,v=!0,aa=this;function y(a,c){var b=a.split("."),e=aa;!(b[0]in e)&&e.execScript&&e.execScript("var "+b[0]);for(var f;b.length&&(f=b.shift());)!b.length&&c!==r?e[f]=c:e=e[f]?e[f]:e[f]={}};var H="undefined"!==typeof Uint8Array&&"undefined"!==typeof Uint16Array&&"undefined"!==typeof Uint32Array;function ba(a){if("string"===typeof a){var c=a.split(""),b,e;b=0;for(e=c.length;b<e;b++)c[b]=(c[b].charCodeAt(0)&255)>>>0;a=c}for(var f=1,d=0,g=a.length,h,m=0;0<g;){h=1024<g?1024:g;g-=h;do f+=a[m++],d+=f;while(--h);f%=65521;d%=65521}return(d<<16|f)>>>0};function J(a,c){this.index="number"===typeof c?c:0;this.i=0;this.buffer=a instanceof(H?Uint8Array:Array)?a:new (H?Uint8Array:Array)(32768);2*this.buffer.length<=this.index&&i(Error("invalid index"));this.buffer.length<=this.index&&this.f()}J.prototype.f=function(){var a=this.buffer,c,b=a.length,e=new (H?Uint8Array:Array)(b<<1);if(H)e.set(a);else for(c=0;c<b;++c)e[c]=a[c];return this.buffer=e};
-J.prototype.d=function(a,c,b){var e=this.buffer,f=this.index,d=this.i,g=e[f],h;b&&1<c&&(a=8<c?(N[a&255]<<24|N[a>>>8&255]<<16|N[a>>>16&255]<<8|N[a>>>24&255])>>32-c:N[a]>>8-c);if(8>c+d)g=g<<c|a,d+=c;else for(h=0;h<c;++h)g=g<<1|a>>c-h-1&1,8===++d&&(d=0,e[f++]=N[g],g=0,f===e.length&&(e=this.f()));e[f]=g;this.buffer=e;this.i=d;this.index=f};J.prototype.finish=function(){var a=this.buffer,c=this.index,b;0<this.i&&(a[c]<<=8-this.i,a[c]=N[a[c]],c++);H?b=a.subarray(0,c):(a.length=c,b=a);return b};
-var ca=new (H?Uint8Array:Array)(256),ha;for(ha=0;256>ha;++ha){for(var R=ha,ia=R,ja=7,R=R>>>1;R;R>>>=1)ia<<=1,ia|=R&1,--ja;ca[ha]=(ia<<ja&255)>>>0}var N=ca;var ka=[0,1996959894,3993919788,2567524794,124634137,1886057615,3915621685,2657392035,249268274,2044508324,3772115230,2547177864,162941995,2125561021,3887607047,2428444049,498536548,1789927666,4089016648,2227061214,450548861,1843258603,4107580753,2211677639,325883990,1684777152,4251122042,2321926636,335633487,1661365465,4195302755,2366115317,997073096,1281953886,3579855332,2724688242,1006888145,1258607687,3524101629,2768942443,901097722,1119000684,3686517206,2898065728,853044451,1172266101,3705015759,
-2882616665,651767980,1373503546,3369554304,3218104598,565507253,1454621731,3485111705,3099436303,671266974,1594198024,3322730930,2970347812,795835527,1483230225,3244367275,3060149565,1994146192,31158534,2563907772,4023717930,1907459465,112637215,2680153253,3904427059,2013776290,251722036,2517215374,3775830040,2137656763,141376813,2439277719,3865271297,1802195444,476864866,2238001368,4066508878,1812370925,453092731,2181625025,4111451223,1706088902,314042704,2344532202,4240017532,1658658271,366619977,
-2362670323,4224994405,1303535960,984961486,2747007092,3569037538,1256170817,1037604311,2765210733,3554079995,1131014506,879679996,2909243462,3663771856,1141124467,855842277,2852801631,3708648649,1342533948,654459306,3188396048,3373015174,1466479909,544179635,3110523913,3462522015,1591671054,702138776,2966460450,3352799412,1504918807,783551873,3082640443,3233442989,3988292384,2596254646,62317068,1957810842,3939845945,2647816111,81470997,1943803523,3814918930,2489596804,225274430,2053790376,3826175755,
-2466906013,167816743,2097651377,4027552580,2265490386,503444072,1762050814,4150417245,2154129355,426522225,1852507879,4275313526,2312317920,282753626,1742555852,4189708143,2394877945,397917763,1622183637,3604390888,2714866558,953729732,1340076626,3518719985,2797360999,1068828381,1219638859,3624741850,2936675148,906185462,1090812512,3747672003,2825379669,829329135,1181335161,3412177804,3160834842,628085408,1382605366,3423369109,3138078467,570562233,1426400815,3317316542,2998733608,733239954,1555261956,
-3268935591,3050360625,752459403,1541320221,2607071920,3965973030,1969922972,40735498,2617837225,3943577151,1913087877,83908371,2512341634,3803740692,2075208622,213261112,2463272603,3855990285,2094854071,198958881,2262029012,4057260610,1759359992,534414190,2176718541,4139329115,1873836001,414664567,2282248934,4279200368,1711684554,285281116,2405801727,4167216745,1634467795,376229701,2685067896,3608007406,1308918612,956543938,2808555105,3495958263,1231636301,1047427035,2932959818,3654703836,1088359270,
-936918E3,2847714899,3736837829,1202900863,817233897,3183342108,3401237130,1404277552,615818150,3134207493,3453421203,1423857449,601450431,3009837614,3294710456,1567103746,711928724,3020668471,3272380065,1510334235,755167117];H&&new Uint32Array(ka);function la(a){this.buffer=new (H?Uint16Array:Array)(2*a);this.length=0}la.prototype.getParent=function(a){return 2*((a-2)/4|0)};la.prototype.push=function(a,c){var b,e,f=this.buffer,d;b=this.length;f[this.length++]=c;for(f[this.length++]=a;0<b;)if(e=this.getParent(b),f[b]>f[e])d=f[b],f[b]=f[e],f[e]=d,d=f[b+1],f[b+1]=f[e+1],f[e+1]=d,b=e;else break;return this.length};
-la.prototype.pop=function(){var a,c,b=this.buffer,e,f,d;c=b[0];a=b[1];this.length-=2;b[0]=b[this.length];b[1]=b[this.length+1];for(d=0;;){f=2*d+2;if(f>=this.length)break;f+2<this.length&&b[f+2]>b[f]&&(f+=2);if(b[f]>b[d])e=b[d],b[d]=b[f],b[f]=e,e=b[d+1],b[d+1]=b[f+1],b[f+1]=e;else break;d=f}return{index:a,value:c,length:this.length}};function S(a){var c=a.length,b=0,e=Number.POSITIVE_INFINITY,f,d,g,h,m,j,s,n,l;for(n=0;n<c;++n)a[n]>b&&(b=a[n]),a[n]<e&&(e=a[n]);f=1<<b;d=new (H?Uint32Array:Array)(f);g=1;h=0;for(m=2;g<=b;){for(n=0;n<c;++n)if(a[n]===g){j=0;s=h;for(l=0;l<g;++l)j=j<<1|s&1,s>>=1;for(l=j;l<f;l+=m)d[l]=g<<16|n;++h}++g;h<<=1;m<<=1}return[d,b,e]};function ma(a,c){this.h=pa;this.w=0;this.input=a;this.b=0;c&&(c.lazy&&(this.w=c.lazy),"number"===typeof c.compressionType&&(this.h=c.compressionType),c.outputBuffer&&(this.a=H&&c.outputBuffer instanceof Array?new Uint8Array(c.outputBuffer):c.outputBuffer),"number"===typeof c.outputIndex&&(this.b=c.outputIndex));this.a||(this.a=new (H?Uint8Array:Array)(32768))}var pa=2,qa={NONE:0,r:1,j:pa,N:3},ra=[],T;
-for(T=0;288>T;T++)switch(v){case 143>=T:ra.push([T+48,8]);break;case 255>=T:ra.push([T-144+400,9]);break;case 279>=T:ra.push([T-256+0,7]);break;case 287>=T:ra.push([T-280+192,8]);break;default:i("invalid literal: "+T)}
-ma.prototype.n=function(){var a,c,b,e,f=this.input;switch(this.h){case 0:b=0;for(e=f.length;b<e;){c=H?f.subarray(b,b+65535):f.slice(b,b+65535);b+=c.length;var d=c,g=b===e,h=r,m=r,j=r,s=r,n=r,l=this.a,q=this.b;if(H){for(l=new Uint8Array(this.a.buffer);l.length<=q+d.length+5;)l=new Uint8Array(l.length<<1);l.set(this.a)}h=g?1:0;l[q++]=h|0;m=d.length;j=~m+65536&65535;l[q++]=m&255;l[q++]=m>>>8&255;l[q++]=j&255;l[q++]=j>>>8&255;if(H)l.set(d,q),q+=d.length,l=l.subarray(0,q);else{s=0;for(n=d.length;s<n;++s)l[q++]=
-d[s];l.length=q}this.b=q;this.a=l}break;case 1:var E=new J(new Uint8Array(this.a.buffer),this.b);E.d(1,1,v);E.d(1,2,v);var t=sa(this,f),z,K,A;z=0;for(K=t.length;z<K;z++)if(A=t[z],J.prototype.d.apply(E,ra[A]),256<A)E.d(t[++z],t[++z],v),E.d(t[++z],5),E.d(t[++z],t[++z],v);else if(256===A)break;this.a=E.finish();this.b=this.a.length;break;case pa:var x=new J(new Uint8Array(this.a),this.b),B,k,p,D,C,da=[16,17,18,0,8,7,9,6,10,5,11,4,12,3,13,2,14,1,15],W,Ma,ea,Na,na,va=Array(19),Oa,$,oa,F,Pa;B=pa;x.d(1,
-1,v);x.d(B,2,v);k=sa(this,f);W=ta(this.L,15);Ma=ua(W);ea=ta(this.K,7);Na=ua(ea);for(p=286;257<p&&0===W[p-1];p--);for(D=30;1<D&&0===ea[D-1];D--);var Qa=p,Ra=D,M=new (H?Uint32Array:Array)(Qa+Ra),u,O,w,fa,L=new (H?Uint32Array:Array)(316),I,G,P=new (H?Uint8Array:Array)(19);for(u=O=0;u<Qa;u++)M[O++]=W[u];for(u=0;u<Ra;u++)M[O++]=ea[u];if(!H){u=0;for(fa=P.length;u<fa;++u)P[u]=0}u=I=0;for(fa=M.length;u<fa;u+=O){for(O=1;u+O<fa&&M[u+O]===M[u];++O);w=O;if(0===M[u])if(3>w)for(;0<w--;)L[I++]=0,P[0]++;else for(;0<
-w;)G=138>w?w:138,G>w-3&&G<w&&(G=w-3),10>=G?(L[I++]=17,L[I++]=G-3,P[17]++):(L[I++]=18,L[I++]=G-11,P[18]++),w-=G;else if(L[I++]=M[u],P[M[u]]++,w--,3>w)for(;0<w--;)L[I++]=M[u],P[M[u]]++;else for(;0<w;)G=6>w?w:6,G>w-3&&G<w&&(G=w-3),L[I++]=16,L[I++]=G-3,P[16]++,w-=G}a=H?L.subarray(0,I):L.slice(0,I);na=ta(P,7);for(F=0;19>F;F++)va[F]=na[da[F]];for(C=19;4<C&&0===va[C-1];C--);Oa=ua(na);x.d(p-257,5,v);x.d(D-1,5,v);x.d(C-4,4,v);for(F=0;F<C;F++)x.d(va[F],3,v);F=0;for(Pa=a.length;F<Pa;F++)if($=a[F],x.d(Oa[$],
-na[$],v),16<=$){F++;switch($){case 16:oa=2;break;case 17:oa=3;break;case 18:oa=7;break;default:i("invalid code: "+$)}x.d(a[F],oa,v)}var Sa=[Ma,W],Ta=[Na,ea],Q,Ua,ga,ya,Va,Wa,Xa,Ya;Va=Sa[0];Wa=Sa[1];Xa=Ta[0];Ya=Ta[1];Q=0;for(Ua=k.length;Q<Ua;++Q)if(ga=k[Q],x.d(Va[ga],Wa[ga],v),256<ga)x.d(k[++Q],k[++Q],v),ya=k[++Q],x.d(Xa[ya],Ya[ya],v),x.d(k[++Q],k[++Q],v);else if(256===ga)break;this.a=x.finish();this.b=this.a.length;break;default:i("invalid compression type")}return this.a};
-function wa(a,c){this.length=a;this.G=c}
-function xa(){var a=za;switch(v){case 3===a:return[257,a-3,0];case 4===a:return[258,a-4,0];case 5===a:return[259,a-5,0];case 6===a:return[260,a-6,0];case 7===a:return[261,a-7,0];case 8===a:return[262,a-8,0];case 9===a:return[263,a-9,0];case 10===a:return[264,a-10,0];case 12>=a:return[265,a-11,1];case 14>=a:return[266,a-13,1];case 16>=a:return[267,a-15,1];case 18>=a:return[268,a-17,1];case 22>=a:return[269,a-19,2];case 26>=a:return[270,a-23,2];case 30>=a:return[271,a-27,2];case 34>=a:return[272,a-
-31,2];case 42>=a:return[273,a-35,3];case 50>=a:return[274,a-43,3];case 58>=a:return[275,a-51,3];case 66>=a:return[276,a-59,3];case 82>=a:return[277,a-67,4];case 98>=a:return[278,a-83,4];case 114>=a:return[279,a-99,4];case 130>=a:return[280,a-115,4];case 162>=a:return[281,a-131,5];case 194>=a:return[282,a-163,5];case 226>=a:return[283,a-195,5];case 257>=a:return[284,a-227,5];case 258===a:return[285,a-258,0];default:i("invalid length: "+a)}}var Aa=[],za,Ba;
-for(za=3;258>=za;za++)Ba=xa(),Aa[za]=Ba[2]<<24|Ba[1]<<16|Ba[0];var Ca=H?new Uint32Array(Aa):Aa;
-function sa(a,c){function b(a,c){var b=a.G,d=[],e=0,f;f=Ca[a.length];d[e++]=f&65535;d[e++]=f>>16&255;d[e++]=f>>24;var g;switch(v){case 1===b:g=[0,b-1,0];break;case 2===b:g=[1,b-2,0];break;case 3===b:g=[2,b-3,0];break;case 4===b:g=[3,b-4,0];break;case 6>=b:g=[4,b-5,1];break;case 8>=b:g=[5,b-7,1];break;case 12>=b:g=[6,b-9,2];break;case 16>=b:g=[7,b-13,2];break;case 24>=b:g=[8,b-17,3];break;case 32>=b:g=[9,b-25,3];break;case 48>=b:g=[10,b-33,4];break;case 64>=b:g=[11,b-49,4];break;case 96>=b:g=[12,b-
-65,5];break;case 128>=b:g=[13,b-97,5];break;case 192>=b:g=[14,b-129,6];break;case 256>=b:g=[15,b-193,6];break;case 384>=b:g=[16,b-257,7];break;case 512>=b:g=[17,b-385,7];break;case 768>=b:g=[18,b-513,8];break;case 1024>=b:g=[19,b-769,8];break;case 1536>=b:g=[20,b-1025,9];break;case 2048>=b:g=[21,b-1537,9];break;case 3072>=b:g=[22,b-2049,10];break;case 4096>=b:g=[23,b-3073,10];break;case 6144>=b:g=[24,b-4097,11];break;case 8192>=b:g=[25,b-6145,11];break;case 12288>=b:g=[26,b-8193,12];break;case 16384>=
-b:g=[27,b-12289,12];break;case 24576>=b:g=[28,b-16385,13];break;case 32768>=b:g=[29,b-24577,13];break;default:i("invalid distance")}f=g;d[e++]=f[0];d[e++]=f[1];d[e++]=f[2];var h,j;h=0;for(j=d.length;h<j;++h)l[q++]=d[h];t[d[0]]++;z[d[3]]++;E=a.length+c-1;n=null}var e,f,d,g,h,m={},j,s,n,l=H?new Uint16Array(2*c.length):[],q=0,E=0,t=new (H?Uint32Array:Array)(286),z=new (H?Uint32Array:Array)(30),K=a.w,A;if(!H){for(d=0;285>=d;)t[d++]=0;for(d=0;29>=d;)z[d++]=0}t[256]=1;e=0;for(f=c.length;e<f;++e){d=h=0;
-for(g=3;d<g&&e+d!==f;++d)h=h<<8|c[e+d];m[h]===r&&(m[h]=[]);j=m[h];if(!(0<E--)){for(;0<j.length&&32768<e-j[0];)j.shift();if(e+3>=f){n&&b(n,-1);d=0;for(g=f-e;d<g;++d)A=c[e+d],l[q++]=A,++t[A];break}if(0<j.length){var x=r,B=r,k=0,p=r,D=r,C=r,da=r,W=c.length,D=0,da=j.length;a:for(;D<da;D++){x=j[da-D-1];p=3;if(3<k){for(C=k;3<C;C--)if(c[x+C-1]!==c[e+C-1])continue a;p=k}for(;258>p&&e+p<W&&c[x+p]===c[e+p];)++p;p>k&&(B=x,k=p);if(258===p)break}s=new wa(k,e-B);n?n.length<s.length?(A=c[e-1],l[q++]=A,++t[A],b(s,
-0)):b(n,-1):s.length<K?n=s:b(s,0)}else n?b(n,-1):(A=c[e],l[q++]=A,++t[A])}j.push(e)}l[q++]=256;t[256]++;a.L=t;a.K=z;return H?l.subarray(0,q):l}
-function ta(a,c){function b(a){var c=z[a][K[a]];c===n?(b(a+1),b(a+1)):--E[c];++K[a]}var e=a.length,f=new la(572),d=new (H?Uint8Array:Array)(e),g,h,m,j,s;if(!H)for(j=0;j<e;j++)d[j]=0;for(j=0;j<e;++j)0<a[j]&&f.push(j,a[j]);g=Array(f.length/2);h=new (H?Uint32Array:Array)(f.length/2);if(1===g.length)return d[f.pop().index]=1,d;j=0;for(s=f.length/2;j<s;++j)g[j]=f.pop(),h[j]=g[j].value;var n=h.length,l=new (H?Uint16Array:Array)(c),q=new (H?Uint8Array:Array)(c),E=new (H?Uint8Array:Array)(n),t=Array(c),z=
-Array(c),K=Array(c),A=(1<<c)-n,x=1<<c-1,B,k,p,D,C;l[c-1]=n;for(k=0;k<c;++k)A<x?q[k]=0:(q[k]=1,A-=x),A<<=1,l[c-2-k]=(l[c-1-k]/2|0)+n;l[0]=q[0];t[0]=Array(l[0]);z[0]=Array(l[0]);for(k=1;k<c;++k)l[k]>2*l[k-1]+q[k]&&(l[k]=2*l[k-1]+q[k]),t[k]=Array(l[k]),z[k]=Array(l[k]);for(B=0;B<n;++B)E[B]=c;for(p=0;p<l[c-1];++p)t[c-1][p]=h[p],z[c-1][p]=p;for(B=0;B<c;++B)K[B]=0;1===q[c-1]&&(--E[0],++K[c-1]);for(k=c-2;0<=k;--k){D=B=0;C=K[k+1];for(p=0;p<l[k];p++)D=t[k+1][C]+t[k+1][C+1],D>h[B]?(t[k][p]=D,z[k][p]=n,C+=2):
-(t[k][p]=h[B],z[k][p]=B,++B);K[k]=0;1===q[k]&&b(k)}m=E;j=0;for(s=g.length;j<s;++j)d[g[j].index]=m[j];return d}function ua(a){var c=new (H?Uint16Array:Array)(a.length),b=[],e=[],f=0,d,g,h,m;d=0;for(g=a.length;d<g;d++)b[a[d]]=(b[a[d]]|0)+1;d=1;for(g=16;d<=g;d++)e[d]=f,f+=b[d]|0,f>1<<d&&i("overcommitted"),f<<=1;65536>f&&i("undercommitted");d=0;for(g=a.length;d<g;d++){f=e[a[d]];e[a[d]]+=1;h=c[d]=0;for(m=a[d];h<m;h++)c[d]=c[d]<<1|f&1,f>>>=1}return c};function Da(a,c){this.input=a;this.a=new (H?Uint8Array:Array)(32768);this.h=U.j;var b={},e;if((c||!(c={}))&&"number"===typeof c.compressionType)this.h=c.compressionType;for(e in c)b[e]=c[e];b.outputBuffer=this.a;this.z=new ma(this.input,b)}var U=qa;
-Da.prototype.n=function(){var a,c,b,e,f,d,g,h=0;g=this.a;a=Ea;switch(a){case Ea:c=Math.LOG2E*Math.log(32768)-8;break;default:i(Error("invalid compression method"))}b=c<<4|a;g[h++]=b;switch(a){case Ea:switch(this.h){case U.NONE:f=0;break;case U.r:f=1;break;case U.j:f=2;break;default:i(Error("unsupported compression type"))}break;default:i(Error("invalid compression method"))}e=f<<6|0;g[h++]=e|31-(256*b+e)%31;d=ba(this.input);this.z.b=h;g=this.z.n();h=g.length;H&&(g=new Uint8Array(g.buffer),g.length<=
-h+4&&(this.a=new Uint8Array(g.length+4),this.a.set(g),g=this.a),g=g.subarray(0,h+4));g[h++]=d>>24&255;g[h++]=d>>16&255;g[h++]=d>>8&255;g[h++]=d&255;return g};y("Zlib.Deflate",Da);y("Zlib.Deflate.compress",function(a,c){return(new Da(a,c)).n()});y("Zlib.Deflate.CompressionType",U);y("Zlib.Deflate.CompressionType.NONE",U.NONE);y("Zlib.Deflate.CompressionType.FIXED",U.r);y("Zlib.Deflate.CompressionType.DYNAMIC",U.j);function V(a,c){this.k=[];this.l=32768;this.e=this.g=this.c=this.q=0;this.input=H?new Uint8Array(a):a;this.s=!1;this.m=Fa;this.B=!1;if(c||!(c={}))c.index&&(this.c=c.index),c.bufferSize&&(this.l=c.bufferSize),c.bufferType&&(this.m=c.bufferType),c.resize&&(this.B=c.resize);switch(this.m){case Ga:this.b=32768;this.a=new (H?Uint8Array:Array)(32768+this.l+258);break;case Fa:this.b=0;this.a=new (H?Uint8Array:Array)(this.l);this.f=this.J;this.t=this.H;this.o=this.I;break;default:i(Error("invalid inflate mode"))}}
-var Ga=0,Fa=1,Ha={D:Ga,C:Fa};
-V.prototype.p=function(){for(;!this.s;){var a=X(this,3);a&1&&(this.s=v);a>>>=1;switch(a){case 0:var c=this.input,b=this.c,e=this.a,f=this.b,d=r,g=r,h=r,m=e.length,j=r;this.e=this.g=0;d=c[b++];d===r&&i(Error("invalid uncompressed block header: LEN (first byte)"));g=d;d=c[b++];d===r&&i(Error("invalid uncompressed block header: LEN (second byte)"));g|=d<<8;d=c[b++];d===r&&i(Error("invalid uncompressed block header: NLEN (first byte)"));h=d;d=c[b++];d===r&&i(Error("invalid uncompressed block header: NLEN (second byte)"));h|=
-d<<8;g===~h&&i(Error("invalid uncompressed block header: length verify"));b+g>c.length&&i(Error("input buffer is broken"));switch(this.m){case Ga:for(;f+g>e.length;){j=m-f;g-=j;if(H)e.set(c.subarray(b,b+j),f),f+=j,b+=j;else for(;j--;)e[f++]=c[b++];this.b=f;e=this.f();f=this.b}break;case Fa:for(;f+g>e.length;)e=this.f({v:2});break;default:i(Error("invalid inflate mode"))}if(H)e.set(c.subarray(b,b+g),f),f+=g,b+=g;else for(;g--;)e[f++]=c[b++];this.c=b;this.b=f;this.a=e;break;case 1:this.o(Ia,Ja);break;
-case 2:Ka(this);break;default:i(Error("unknown BTYPE: "+a))}}return this.t()};
-var La=[16,17,18,0,8,7,9,6,10,5,11,4,12,3,13,2,14,1,15],Za=H?new Uint16Array(La):La,$a=[3,4,5,6,7,8,9,10,11,13,15,17,19,23,27,31,35,43,51,59,67,83,99,115,131,163,195,227,258,258,258],ab=H?new Uint16Array($a):$a,bb=[0,0,0,0,0,0,0,0,1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4,5,5,5,5,0,0,0],cb=H?new Uint8Array(bb):bb,db=[1,2,3,4,5,7,9,13,17,25,33,49,65,97,129,193,257,385,513,769,1025,1537,2049,3073,4097,6145,8193,12289,16385,24577],eb=H?new Uint16Array(db):db,fb=[0,0,0,0,1,1,2,2,3,3,4,4,5,5,6,6,7,7,8,8,9,9,10,
-10,11,11,12,12,13,13],gb=H?new Uint8Array(fb):fb,hb=new (H?Uint8Array:Array)(288),Y,ib;Y=0;for(ib=hb.length;Y<ib;++Y)hb[Y]=143>=Y?8:255>=Y?9:279>=Y?7:8;var Ia=S(hb),jb=new (H?Uint8Array:Array)(30),kb,lb;kb=0;for(lb=jb.length;kb<lb;++kb)jb[kb]=5;var Ja=S(jb);function X(a,c){for(var b=a.g,e=a.e,f=a.input,d=a.c,g;e<c;)g=f[d++],g===r&&i(Error("input buffer is broken")),b|=g<<e,e+=8;g=b&(1<<c)-1;a.g=b>>>c;a.e=e-c;a.c=d;return g}
-function mb(a,c){for(var b=a.g,e=a.e,f=a.input,d=a.c,g=c[0],h=c[1],m,j,s;e<h;)m=f[d++],m===r&&i(Error("input buffer is broken")),b|=m<<e,e+=8;j=g[b&(1<<h)-1];s=j>>>16;a.g=b>>s;a.e=e-s;a.c=d;return j&65535}
-function Ka(a){function c(a,b,c){var d,e,f,g;for(g=0;g<a;)switch(d=mb(this,b),d){case 16:for(f=3+X(this,2);f--;)c[g++]=e;break;case 17:for(f=3+X(this,3);f--;)c[g++]=0;e=0;break;case 18:for(f=11+X(this,7);f--;)c[g++]=0;e=0;break;default:e=c[g++]=d}return c}var b=X(a,5)+257,e=X(a,5)+1,f=X(a,4)+4,d=new (H?Uint8Array:Array)(Za.length),g,h,m,j;for(j=0;j<f;++j)d[Za[j]]=X(a,3);g=S(d);h=new (H?Uint8Array:Array)(b);m=new (H?Uint8Array:Array)(e);a.o(S(c.call(a,b,g,h)),S(c.call(a,e,g,m)))}
-V.prototype.o=function(a,c){var b=this.a,e=this.b;this.u=a;for(var f=b.length-258,d,g,h,m;256!==(d=mb(this,a));)if(256>d)e>=f&&(this.b=e,b=this.f(),e=this.b),b[e++]=d;else{g=d-257;m=ab[g];0<cb[g]&&(m+=X(this,cb[g]));d=mb(this,c);h=eb[d];0<gb[d]&&(h+=X(this,gb[d]));e>=f&&(this.b=e,b=this.f(),e=this.b);for(;m--;)b[e]=b[e++-h]}for(;8<=this.e;)this.e-=8,this.c--;this.b=e};
-V.prototype.I=function(a,c){var b=this.a,e=this.b;this.u=a;for(var f=b.length,d,g,h,m;256!==(d=mb(this,a));)if(256>d)e>=f&&(b=this.f(),f=b.length),b[e++]=d;else{g=d-257;m=ab[g];0<cb[g]&&(m+=X(this,cb[g]));d=mb(this,c);h=eb[d];0<gb[d]&&(h+=X(this,gb[d]));e+m>f&&(b=this.f(),f=b.length);for(;m--;)b[e]=b[e++-h]}for(;8<=this.e;)this.e-=8,this.c--;this.b=e};
-V.prototype.f=function(){var a=new (H?Uint8Array:Array)(this.b-32768),c=this.b-32768,b,e,f=this.a;if(H)a.set(f.subarray(32768,a.length));else{b=0;for(e=a.length;b<e;++b)a[b]=f[b+32768]}this.k.push(a);this.q+=a.length;if(H)f.set(f.subarray(c,c+32768));else for(b=0;32768>b;++b)f[b]=f[c+b];this.b=32768;return f};
-V.prototype.J=function(a){var c,b=this.input.length/this.c+1|0,e,f,d,g=this.input,h=this.a;a&&("number"===typeof a.v&&(b=a.v),"number"===typeof a.F&&(b+=a.F));2>b?(e=(g.length-this.c)/this.u[2],d=258*(e/2)|0,f=d<h.length?h.length+d:h.length<<1):f=h.length*b;H?(c=new Uint8Array(f),c.set(h)):c=h;return this.a=c};
-V.prototype.t=function(){var a=0,c=this.a,b=this.k,e,f=new (H?Uint8Array:Array)(this.q+(this.b-32768)),d,g,h,m;if(0===b.length)return H?this.a.subarray(32768,this.b):this.a.slice(32768,this.b);d=0;for(g=b.length;d<g;++d){e=b[d];h=0;for(m=e.length;h<m;++h)f[a++]=e[h]}d=32768;for(g=this.b;d<g;++d)f[a++]=c[d];this.k=[];return this.buffer=f};
-V.prototype.H=function(){var a,c=this.b;H?this.B?(a=new Uint8Array(c),a.set(this.a.subarray(0,c))):a=this.a.subarray(0,c):(this.a.length>c&&(this.a.length=c),a=this.a);return this.buffer=a};function nb(a,c){var b,e;this.input=a;this.c=0;if(c||!(c={}))c.index&&(this.c=c.index),c.verify&&(this.M=c.verify);b=a[this.c++];e=a[this.c++];switch(b&15){case Ea:this.method=Ea;break;default:i(Error("unsupported compression method"))}0!==((b<<8)+e)%31&&i(Error("invalid fcheck flag:"+((b<<8)+e)%31));e&32&&i(Error("fdict flag is not supported"));this.A=new V(a,{index:this.c,bufferSize:c.bufferSize,bufferType:c.bufferType,resize:c.resize})}
-nb.prototype.p=function(){var a=this.input,c,b;c=this.A.p();this.c=this.A.c;this.M&&(b=(a[this.c++]<<24|a[this.c++]<<16|a[this.c++]<<8|a[this.c++])>>>0,b!==ba(c)&&i(Error("invalid adler-32 checksum")));return c};y("Zlib.Inflate",nb);y("Zlib.Inflate.BufferType",Ha);Ha.ADAPTIVE=Ha.C;Ha.BLOCK=Ha.D;y("Zlib.Inflate.prototype.decompress",nb.prototype.p);var ob=[16,17,18,0,8,7,9,6,10,5,11,4,12,3,13,2,14,1,15];H&&new Uint16Array(ob);var pb=[3,4,5,6,7,8,9,10,11,13,15,17,19,23,27,31,35,43,51,59,67,83,99,115,131,163,195,227,258,258,258];H&&new Uint16Array(pb);var qb=[0,0,0,0,0,0,0,0,1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4,5,5,5,5,0,0,0];H&&new Uint8Array(qb);var rb=[1,2,3,4,5,7,9,13,17,25,33,49,65,97,129,193,257,385,513,769,1025,1537,2049,3073,4097,6145,8193,12289,16385,24577];H&&new Uint16Array(rb);
-var sb=[0,0,0,0,1,1,2,2,3,3,4,4,5,5,6,6,7,7,8,8,9,9,10,10,11,11,12,12,13,13];H&&new Uint8Array(sb);var tb=new (H?Uint8Array:Array)(288),Z,ub;Z=0;for(ub=tb.length;Z<ub;++Z)tb[Z]=143>=Z?8:255>=Z?9:279>=Z?7:8;S(tb);var vb=new (H?Uint8Array:Array)(30),wb,xb;wb=0;for(xb=vb.length;wb<xb;++wb)vb[wb]=5;S(vb);var Ea=8;}).call(this);
-var _p = window;
-_p = _p.Zlib = _p["Zlib"];
-_p.Deflate = _p["Deflate"];
-_p.Deflate.compress =_p.Deflate["compress"];
-_p.Inflate = _p["Inflate"];
-_p.Inflate.BufferType = _p.Inflate["BufferType"];
-_p.Inflate.prototype.decompress = _p.Inflate.prototype["decompress"];
+cc.TransitionMoveInR = cc.TransitionMoveInL.extend({
+    ctor:function (t, scene) {
+        cc.TransitionMoveInL.prototype.ctor.call(this);
+        scene && this.initWithDuration(t, scene);
+    },
+    initScenes:function () {
+        this._inScene.setPosition(cc.director.getWinSize().width, 0);
+    }
+});
+cc.TransitionMoveInR.create = function (t, scene) {
+    return new cc.TransitionMoveInR(t, scene);
+};
+cc.TransitionMoveInT = cc.TransitionMoveInL.extend({
+    ctor:function (t, scene) {
+        cc.TransitionMoveInL.prototype.ctor.call(this);
+        scene && this.initWithDuration(t, scene);
+    },
+    initScenes:function () {
+        this._inScene.setPosition(0, cc.director.getWinSize().height);
+    }
+});
+cc.TransitionMoveInT.create = function (t, scene) {
+    return new cc.TransitionMoveInT(t, scene);
+};
+cc.TransitionMoveInB = cc.TransitionMoveInL.extend({
+    ctor:function (t, scene) {
+        cc.TransitionMoveInL.prototype.ctor.call(this);
+        scene && this.initWithDuration(t, scene);
+    },
+    initScenes:function () {
+        this._inScene.setPosition(0, -cc.director.getWinSize().height);
+    }
+});
+cc.TransitionMoveInB.create = function (t, scene) {
+    return new cc.TransitionMoveInB(t, scene);
+};
+cc.ADJUST_FACTOR = 0.5;
+cc.TransitionSlideInL = cc.TransitionScene.extend({
+    ctor:function (t, scene) {
+        cc.TransitionScene.prototype.ctor.call(this);
+        scene && this.initWithDuration(t, scene);
+    },
+    _sceneOrder:function () {
+        this._isInSceneOnTop = false;
+    },
+    onEnter:function () {
+        cc.TransitionScene.prototype.onEnter.call(this);
+        this.initScenes();
+        var inA = this.action();
+        var outA = this.action();
+        var inAction = this.easeActionWithAction(inA);
+        var outAction = cc.sequence(this.easeActionWithAction(outA), cc.callFunc(this.finish, this));
+        this._inScene.runAction(inAction);
+        this._outScene.runAction(outAction);
+    },
+    initScenes:function () {
+        this._inScene.setPosition(-cc.director.getWinSize().width + cc.ADJUST_FACTOR, 0);
+    },
+    action:function () {
+        return cc.moveBy(this._duration, cc.p(cc.director.getWinSize().width - cc.ADJUST_FACTOR, 0));
+    },
+    easeActionWithAction:function (action) {
+        return new cc.EaseInOut(action, 2.0);
+    }
+});
+cc.TransitionSlideInL.create = function (t, scene) {
+    return new cc.TransitionSlideInL(t, scene);
+};
+cc.TransitionSlideInR = cc.TransitionSlideInL.extend({
+    ctor:function (t, scene) {
+        cc.TransitionSlideInL.prototype.ctor.call(this);
+        scene && this.initWithDuration(t, scene);
+    },
+    _sceneOrder:function () {
+        this._isInSceneOnTop = true;
+    },
+    initScenes:function () {
+        this._inScene.setPosition(cc.director.getWinSize().width - cc.ADJUST_FACTOR, 0);
+    },
+    action:function () {
+        return cc.moveBy(this._duration, cc.p(-(cc.director.getWinSize().width - cc.ADJUST_FACTOR), 0));
+    }
+});
+cc.TransitionSlideInR.create = function (t, scene) {
+    return new cc.TransitionSlideInR(t, scene);
+};
+cc.TransitionSlideInB = cc.TransitionSlideInL.extend({
+    ctor:function (t, scene) {
+        cc.TransitionSlideInL.prototype.ctor.call(this);
+        scene && this.initWithDuration(t, scene);
+    },
+    _sceneOrder:function () {
+        this._isInSceneOnTop = false;
+    },
+    initScenes:function () {
+        this._inScene.setPosition(0, -(cc.director.getWinSize().height - cc.ADJUST_FACTOR));
+    },
+    action:function () {
+        return cc.moveBy(this._duration, cc.p(0, cc.director.getWinSize().height - cc.ADJUST_FACTOR));
+    }
+});
+cc.TransitionSlideInB.create = function (t, scene) {
+    return new cc.TransitionSlideInB(t, scene);
+};
+cc.TransitionSlideInT = cc.TransitionSlideInL.extend({
+    ctor:function (t, scene) {
+        cc.TransitionSlideInL.prototype.ctor.call(this);
+        scene && this.initWithDuration(t, scene);
+    },
+    _sceneOrder:function () {
+        this._isInSceneOnTop = true;
+    },
+    initScenes:function () {
+        this._inScene.setPosition(0, cc.director.getWinSize().height - cc.ADJUST_FACTOR);
+    },
+    action:function () {
+        return cc.moveBy(this._duration, cc.p(0, -(cc.director.getWinSize().height - cc.ADJUST_FACTOR)));
+    }
+});
+cc.TransitionSlideInT.create = function (t, scene) {
+    return new cc.TransitionSlideInT(t, scene);
+};
+cc.TransitionShrinkGrow = cc.TransitionScene.extend({
+    ctor:function (t, scene) {
+        cc.TransitionScene.prototype.ctor.call(this);
+        scene && this.initWithDuration(t, scene);
+    },
+    onEnter:function () {
+        cc.TransitionScene.prototype.onEnter.call(this);
+	    this._inScene.attr({
+		    scale: 0.001,
+		    anchorX: 2 / 3.0,
+		    anchorY: 0.5
+	    });
+	    this._outScene.attr({
+		    scale: 1.0,
+		    anchorX: 1 / 3.0,
+		    anchorY: 0.5
+	    });
+        var scaleOut = cc.scaleTo(this._duration, 0.01);
+        var scaleIn = cc.scaleTo(this._duration, 1.0);
+        this._inScene.runAction(this.easeActionWithAction(scaleIn));
+        this._outScene.runAction(
+            cc.sequence(this.easeActionWithAction(scaleOut), cc.callFunc(this.finish, this))
+        );
+    },
+    easeActionWithAction:function (action) {
+        return new cc.EaseOut(action, 2.0);
+    }
+});
+cc.TransitionShrinkGrow.create = function (t, scene) {
+    return new cc.TransitionShrinkGrow(t, scene);
+};
+cc.TransitionFlipX = cc.TransitionSceneOriented.extend({
+    ctor:function (t, scene, o) {
+        cc.TransitionSceneOriented.prototype.ctor.call(this);
+        if(o == null)
+            o = cc.TRANSITION_ORIENTATION_RIGHT_OVER;
+        scene && this.initWithDuration(t, scene, o);
+    },
+    onEnter:function () {
+        cc.TransitionScene.prototype.onEnter.call(this);
+        var inA, outA;
+        this._inScene.visible = false;
+        var inDeltaZ, inAngleZ, outDeltaZ, outAngleZ;
+        if (this._orientation === cc.TRANSITION_ORIENTATION_RIGHT_OVER) {
+            inDeltaZ = 90;
+            inAngleZ = 270;
+            outDeltaZ = 90;
+            outAngleZ = 0;
+        } else {
+            inDeltaZ = -90;
+            inAngleZ = 90;
+            outDeltaZ = -90;
+            outAngleZ = 0;
+        }
+        inA = cc.sequence(
+            cc.delayTime(this._duration / 2), cc.show(),
+            cc.orbitCamera(this._duration / 2, 1, 0, inAngleZ, inDeltaZ, 0, 0),
+            cc.callFunc(this.finish, this)
+        );
+        outA = cc.sequence(
+            cc.orbitCamera(this._duration / 2, 1, 0, outAngleZ, outDeltaZ, 0, 0),
+            cc.hide(), cc.delayTime(this._duration / 2)
+        );
+        this._inScene.runAction(inA);
+        this._outScene.runAction(outA);
+    }
+});
+cc.TransitionFlipX.create = function (t, scene, o) {
+    return new cc.TransitionFlipX(t, scene, o);
+};
+cc.TransitionFlipY = cc.TransitionSceneOriented.extend({
+    ctor:function (t, scene, o) {
+        cc.TransitionSceneOriented.prototype.ctor.call(this);
+        if(o == null)
+            o = cc.TRANSITION_ORIENTATION_UP_OVER;
+        scene && this.initWithDuration(t, scene, o);
+    },
+    onEnter:function () {
+        cc.TransitionScene.prototype.onEnter.call(this);
+        var inA, outA;
+        this._inScene.visible = false;
+        var inDeltaZ, inAngleZ, outDeltaZ, outAngleZ;
+        if (this._orientation === cc.TRANSITION_ORIENTATION_UP_OVER) {
+            inDeltaZ = 90;
+            inAngleZ = 270;
+            outDeltaZ = 90;
+            outAngleZ = 0;
+        } else {
+            inDeltaZ = -90;
+            inAngleZ = 90;
+            outDeltaZ = -90;
+            outAngleZ = 0;
+        }
+        inA = cc.sequence(
+            cc.delayTime(this._duration / 2), cc.show(),
+            cc.orbitCamera(this._duration / 2, 1, 0, inAngleZ, inDeltaZ, 90, 0),
+            cc.callFunc(this.finish, this)
+        );
+        outA = cc.sequence(
+            cc.orbitCamera(this._duration / 2, 1, 0, outAngleZ, outDeltaZ, 90, 0),
+            cc.hide(), cc.delayTime(this._duration / 2)
+        );
+        this._inScene.runAction(inA);
+        this._outScene.runAction(outA);
+    }
+});
+cc.TransitionFlipY.create = function (t, scene, o) {
+    return new cc.TransitionFlipY(t, scene, o);
+};
+cc.TransitionFlipAngular = cc.TransitionSceneOriented.extend({
+    ctor:function (t, scene, o) {
+        cc.TransitionSceneOriented.prototype.ctor.call(this);
+        if(o == null)
+            o = cc.TRANSITION_ORIENTATION_RIGHT_OVER;
+        scene && this.initWithDuration(t, scene, o);
+    },
+    onEnter:function () {
+        cc.TransitionScene.prototype.onEnter.call(this);
+        var inA, outA;
+        this._inScene.visible = false;
+        var inDeltaZ, inAngleZ, outDeltaZ, outAngleZ;
+        if (this._orientation === cc.TRANSITION_ORIENTATION_RIGHT_OVER) {
+            inDeltaZ = 90;
+            inAngleZ = 270;
+            outDeltaZ = 90;
+            outAngleZ = 0;
+        } else {
+            inDeltaZ = -90;
+            inAngleZ = 90;
+            outDeltaZ = -90;
+            outAngleZ = 0;
+        }
+        inA = cc.sequence(
+            cc.delayTime(this._duration / 2), cc.show(),
+            cc.orbitCamera(this._duration / 2, 1, 0, inAngleZ, inDeltaZ, -45, 0),
+            cc.callFunc(this.finish, this)
+        );
+        outA = cc.sequence(
+            cc.orbitCamera(this._duration / 2, 1, 0, outAngleZ, outDeltaZ, 45, 0),
+            cc.hide(), cc.delayTime(this._duration / 2)
+        );
+        this._inScene.runAction(inA);
+        this._outScene.runAction(outA);
+    }
+});
+cc.TransitionFlipAngular.create = function (t, scene, o) {
+    return new cc.TransitionFlipAngular(t, scene, o);
+};
+cc.TransitionZoomFlipX = cc.TransitionSceneOriented.extend({
+    ctor:function (t, scene, o) {
+        cc.TransitionSceneOriented.prototype.ctor.call(this);
+        if(o == null)
+            o = cc.TRANSITION_ORIENTATION_RIGHT_OVER;
+        scene && this.initWithDuration(t, scene, o);
+    },
+    onEnter:function () {
+        cc.TransitionScene.prototype.onEnter.call(this);
+        var inA, outA;
+        this._inScene.visible = false;
+        var inDeltaZ, inAngleZ, outDeltaZ, outAngleZ;
+        if (this._orientation === cc.TRANSITION_ORIENTATION_RIGHT_OVER) {
+            inDeltaZ = 90;
+            inAngleZ = 270;
+            outDeltaZ = 90;
+            outAngleZ = 0;
+        } else {
+            inDeltaZ = -90;
+            inAngleZ = 90;
+            outDeltaZ = -90;
+            outAngleZ = 0;
+        }
+        inA = cc.sequence(
+            cc.delayTime(this._duration / 2),
+            cc.spawn(
+                cc.orbitCamera(this._duration / 2, 1, 0, inAngleZ, inDeltaZ, 0, 0),
+                cc.scaleTo(this._duration / 2, 1), cc.show()),
+            cc.callFunc(this.finish, this)
+        );
+        outA = cc.sequence(
+            cc.spawn(
+                cc.orbitCamera(this._duration / 2, 1, 0, outAngleZ, outDeltaZ, 0, 0),
+                cc.scaleTo(this._duration / 2, 0.5)),
+            cc.hide(),
+            cc.delayTime(this._duration / 2)
+        );
+        this._inScene.scale = 0.5;
+        this._inScene.runAction(inA);
+        this._outScene.runAction(outA);
+    }
+});
+cc.TransitionZoomFlipX.create = function (t, scene, o) {
+    return new cc.TransitionZoomFlipX(t, scene, o);
+};
+cc.TransitionZoomFlipY = cc.TransitionSceneOriented.extend({
+    ctor:function (t, scene, o) {
+        cc.TransitionSceneOriented.prototype.ctor.call(this);
+        if(o == null)
+            o = cc.TRANSITION_ORIENTATION_UP_OVER;
+        scene && this.initWithDuration(t, scene, o);
+    },
+    onEnter:function () {
+        cc.TransitionScene.prototype.onEnter.call(this);
+        var inA, outA;
+        this._inScene.visible = false;
+        var inDeltaZ, inAngleZ, outDeltaZ, outAngleZ;
+        if (this._orientation === cc.TRANSITION_ORIENTATION_UP_OVER) {
+            inDeltaZ = 90;
+            inAngleZ = 270;
+            outDeltaZ = 90;
+            outAngleZ = 0;
+        } else {
+            inDeltaZ = -90;
+            inAngleZ = 90;
+            outDeltaZ = -90;
+            outAngleZ = 0;
+        }
+        inA = cc.sequence(
+            cc.delayTime(this._duration / 2),
+            cc.spawn(
+                cc.orbitCamera(this._duration / 2, 1, 0, inAngleZ, inDeltaZ, 90, 0),
+                cc.scaleTo(this._duration / 2, 1), cc.show()),
+            cc.callFunc(this.finish, this));
+        outA = cc.sequence(
+            cc.spawn(
+                cc.orbitCamera(this._duration / 2, 1, 0, outAngleZ, outDeltaZ, 90, 0),
+                cc.scaleTo(this._duration / 2, 0.5)),
+            cc.hide(), cc.delayTime(this._duration / 2));
+        this._inScene.scale = 0.5;
+        this._inScene.runAction(inA);
+        this._outScene.runAction(outA);
+    }
+});
+cc.TransitionZoomFlipY.create = function (t, scene, o) {
+    return new cc.TransitionZoomFlipY(t, scene, o);
+};
+cc.TransitionZoomFlipAngular = cc.TransitionSceneOriented.extend({
+    ctor:function (t, scene, o) {
+        cc.TransitionSceneOriented.prototype.ctor.call(this);
+        if(o == null)
+            o = cc.TRANSITION_ORIENTATION_RIGHT_OVER;
+        scene && this.initWithDuration(t, scene, o);
+    },
+    onEnter:function () {
+        cc.TransitionScene.prototype.onEnter.call(this);
+        var inA, outA;
+        this._inScene.visible = false;
+        var inDeltaZ, inAngleZ, outDeltaZ, outAngleZ;
+        if (this._orientation === cc.TRANSITION_ORIENTATION_RIGHT_OVER) {
+            inDeltaZ = 90;
+            inAngleZ = 270;
+            outDeltaZ = 90;
+            outAngleZ = 0;
+        } else {
+            inDeltaZ = -90;
+            inAngleZ = 90;
+            outDeltaZ = -90;
+            outAngleZ = 0;
+        }
+        inA = cc.sequence(
+            cc.delayTime(this._duration / 2),
+            cc.spawn(
+                cc.orbitCamera(this._duration / 2, 1, 0, inAngleZ, inDeltaZ, -45, 0),
+                cc.scaleTo(this._duration / 2, 1), cc.show()),
+            cc.show(),
+            cc.callFunc(this.finish, this));
+        outA = cc.sequence(
+            cc.spawn(
+                cc.orbitCamera(this._duration / 2, 1, 0, outAngleZ, outDeltaZ, 45, 0),
+                cc.scaleTo(this._duration / 2, 0.5)),
+            cc.hide(), cc.delayTime(this._duration / 2));
+        this._inScene.scale = 0.5;
+        this._inScene.runAction(inA);
+        this._outScene.runAction(outA);
+    }
+});
+cc.TransitionZoomFlipAngular.create = function (t, scene, o) {
+    return new cc.TransitionZoomFlipAngular(t, scene, o);
+};
+cc.TransitionFade = cc.TransitionScene.extend({
+    _color:null,
+    ctor:function (t, scene, color) {
+        cc.TransitionScene.prototype.ctor.call(this);
+        this._color = cc.color();
+        scene && this.initWithDuration(t, scene, color);
+    },
+    onEnter:function () {
+        cc.TransitionScene.prototype.onEnter.call(this);
+        var l = new cc.LayerColor(this._color);
+        this._inScene.visible = false;
+        this.addChild(l, 2, cc.SCENE_FADE);
+        var f = this.getChildByTag(cc.SCENE_FADE);
+        var a = cc.sequence(
+            cc.fadeIn(this._duration / 2),
+            cc.callFunc(this.hideOutShowIn, this),
+            cc.fadeOut(this._duration / 2),
+            cc.callFunc(this.finish, this)
+        );
+        f.runAction(a);
+    },
+    onExit:function () {
+        cc.TransitionScene.prototype.onExit.call(this);
+        this.removeChildByTag(cc.SCENE_FADE, false);
+    },
+    initWithDuration:function (t, scene, color) {
+        color = color || cc.color.BLACK;
+        if (cc.TransitionScene.prototype.initWithDuration.call(this, t, scene)) {
+            this._color.r = color.r;
+            this._color.g = color.g;
+            this._color.b = color.b;
+            this._color.a = 0;
+        }
+        return true;
+    }
+});
+cc.TransitionFade.create = function (t, scene, color) {
+    return new cc.TransitionFade(t, scene, color);
+};
+cc.TransitionCrossFade = cc.TransitionScene.extend({
+    ctor:function (t, scene) {
+        cc.TransitionScene.prototype.ctor.call(this);
+        scene && this.initWithDuration(t, scene);
+    },
+    onEnter:function () {
+        cc.TransitionScene.prototype.onEnter.call(this);
+        var color = cc.color(0, 0, 0, 0);
+        var winSize = cc.director.getWinSize();
+        var layer = new cc.LayerColor(color);
+        var inTexture = new cc.RenderTexture(winSize.width, winSize.height);
+        inTexture.sprite.anchorX = 0.5;
+	    inTexture.sprite.anchorY = 0.5;
+        inTexture.attr({
+	        x: winSize.width / 2,
+	        y: winSize.height / 2,
+	        anchorX: 0.5,
+	        anchorY: 0.5
+        });
+        inTexture.begin();
+        this._inScene.visit();
+        inTexture.end();
+        var outTexture = new cc.RenderTexture(winSize.width, winSize.height);
+        outTexture.setPosition(winSize.width / 2, winSize.height / 2);
+	    outTexture.sprite.anchorX = outTexture.anchorX = 0.5;
+	    outTexture.sprite.anchorY = outTexture.anchorY = 0.5;
+        outTexture.begin();
+        this._outScene.visit();
+        outTexture.end();
+        inTexture.sprite.setBlendFunc(cc.ONE, cc.ONE);
+        outTexture.sprite.setBlendFunc(cc.SRC_ALPHA, cc.ONE_MINUS_SRC_ALPHA);
+        layer.addChild(inTexture);
+        layer.addChild(outTexture);
+        inTexture.sprite.opacity = 255;
+        outTexture.sprite.opacity = 255;
+        var layerAction = cc.sequence(
+            cc.fadeTo(this._duration, 0), cc.callFunc(this.hideOutShowIn, this),
+            cc.callFunc(this.finish, this)
+        );
+        outTexture.sprite.runAction(layerAction);
+        this.addChild(layer, 2, cc.SCENE_FADE);
+    },
+    onExit:function () {
+        this.removeChildByTag(cc.SCENE_FADE, false);
+        cc.TransitionScene.prototype.onExit.call(this);
+    },
+    visit:function () {
+        cc.Node.prototype.visit.call(this);
+    },
+    draw:function () {
+    }
+});
+cc.TransitionCrossFade.create = function (t, scene) {
+    return new cc.TransitionCrossFade(t, scene);
+};
+cc.TransitionTurnOffTiles = cc.TransitionScene.extend({
+    _gridProxy: null,
+    ctor:function (t, scene) {
+        cc.TransitionScene.prototype.ctor.call(this);
+        this._gridProxy = new cc.NodeGrid();
+        scene && this.initWithDuration(t, scene);
+    },
+    _sceneOrder:function () {
+        this._isInSceneOnTop = false;
+    },
+    onEnter:function () {
+        cc.TransitionScene.prototype.onEnter.call(this);
+        this._gridProxy.setTarget(this._outScene);
+        this._gridProxy.onEnter();
+        var winSize = cc.director.getWinSize();
+        var aspect = winSize.width / winSize.height;
+        var x = 0 | (12 * aspect);
+        var y = 12;
+        var toff = cc.turnOffTiles(this._duration, cc.size(x, y));
+        var action = this.easeActionWithAction(toff);
+        this._gridProxy.runAction(cc.sequence(action, cc.callFunc(this.finish, this), cc.stopGrid()));
+    },
+    visit: function(){
+        this._inScene.visit();
+        this._gridProxy.visit();
+    },
+    easeActionWithAction:function (action) {
+        return action;
+    }
+});
+cc.TransitionTurnOffTiles.create = function (t, scene) {
+    return new cc.TransitionTurnOffTiles(t, scene);
+};
+cc.TransitionSplitCols = cc.TransitionScene.extend({
+    _gridProxy: null,
+    _switchTargetToInscene: function(){
+        this._gridProxy.setTarget(this._inScene);
+    },
+    ctor:function (t, scene) {
+        cc.TransitionScene.prototype.ctor.call(this);
+        this._gridProxy = new cc.NodeGrid();
+        scene && this.initWithDuration(t, scene);
+    },
+    onEnter:function () {
+        cc.TransitionScene.prototype.onEnter.call(this);
+        this._gridProxy.setTarget(this._outScene);
+        this._gridProxy.onEnter();
+        var split = this.action();
+        var seq = cc.sequence(
+            split, cc.callFunc(this._switchTargetToInscene, this), split.reverse());
+        this._gridProxy.runAction(
+            cc.sequence(this.easeActionWithAction(seq), cc.callFunc(this.finish, this), cc.stopGrid())
+        );
+    },
+    onExit: function(){
+        this._gridProxy.setTarget(null);
+        this._gridProxy.onExit();
+        cc.TransitionScene.prototype.onExit.call(this);
+    },
+    visit: function(){
+        this._gridProxy.visit();
+    },
+    easeActionWithAction:function (action) {
+        return new cc.EaseInOut(action, 3.0);
+    },
+    action:function () {
+        return cc.splitCols(this._duration / 2.0, 3);
+    }
+});
+cc.TransitionSplitCols.create = function (t, scene) {
+    return new cc.TransitionSplitCols(t, scene);
+};
+cc.TransitionSplitRows = cc.TransitionSplitCols.extend({
+    ctor:function (t, scene) {
+        cc.TransitionSplitCols.prototype.ctor.call(this);
+        scene && this.initWithDuration(t, scene);
+    },
+    action:function () {
+        return cc.splitRows(this._duration / 2.0, 3);
+    }
+});
+cc.TransitionSplitRows.create = function (t, scene) {
+    return new cc.TransitionSplitRows(t, scene);
+};
+cc.TransitionFadeTR = cc.TransitionScene.extend({
+    _gridProxy: null,
+    ctor:function (t, scene) {
+        cc.TransitionScene.prototype.ctor.call(this);
+        this._gridProxy = new cc.NodeGrid();
+        scene && this.initWithDuration(t, scene);
+    },
+    _sceneOrder:function () {
+        this._isInSceneOnTop = false;
+    },
+    onEnter:function () {
+        cc.TransitionScene.prototype.onEnter.call(this);
+        this._gridProxy.setTarget(this._outScene);
+        this._gridProxy.onEnter();
+        var winSize = cc.director.getWinSize();
+        var aspect = winSize.width / winSize.height;
+        var x = 0 | (12 * aspect);
+        var y = 12;
+        var action = this.actionWithSize(cc.size(x, y));
+        this._gridProxy.runAction(
+            cc.sequence(this.easeActionWithAction(action), cc.callFunc(this.finish, this), cc.stopGrid())
+        );
+    },
+    visit: function(){
+        this._inScene.visit();
+        this._gridProxy.visit();
+    },
+    easeActionWithAction:function (action) {
+        return action;
+    },
+    actionWithSize:function (size) {
+        return cc.fadeOutTRTiles(this._duration, size);
+    }
+});
+cc.TransitionFadeTR.create = function (t, scene) {
+    return new cc.TransitionFadeTR(t, scene);
+};
+cc.TransitionFadeBL = cc.TransitionFadeTR.extend({
+    ctor:function (t, scene) {
+        cc.TransitionFadeTR.prototype.ctor.call(this);
+        scene && this.initWithDuration(t, scene);
+    },
+    actionWithSize:function (size) {
+        return cc.fadeOutBLTiles(this._duration, size);
+    }
+});
+cc.TransitionFadeBL.create = function (t, scene) {
+    return new cc.TransitionFadeBL(t, scene);
+};
+cc.TransitionFadeUp = cc.TransitionFadeTR.extend({
+    ctor:function (t, scene) {
+        cc.TransitionFadeTR.prototype.ctor.call(this);
+        scene && this.initWithDuration(t, scene);
+    },
+    actionWithSize:function (size) {
+        return new cc.FadeOutUpTiles(this._duration, size);
+    }
+});
+cc.TransitionFadeUp.create = function (t, scene) {
+    return new cc.TransitionFadeUp(t, scene);
+};
+cc.TransitionFadeDown = cc.TransitionFadeTR.extend({
+    ctor:function (t, scene) {
+        cc.TransitionFadeTR.prototype.ctor.call(this);
+        scene && this.initWithDuration(t, scene);
+    },
+    actionWithSize:function (size) {
+        return cc.fadeOutDownTiles( this._duration, size);
+    }
+});
+cc.TransitionFadeDown.create = function (t, scene) {
+    return new cc.TransitionFadeDown(t, scene);
+};
+cc.SCENE_RADIAL = 0xc001;
+cc.TransitionProgress = cc.TransitionScene.extend({
+    _to:0,
+    _from:0,
+    _sceneToBeModified:null,
+    _className:"TransitionProgress",
+    ctor:function (t, scene) {
+        cc.TransitionScene.prototype.ctor.call(this);
+        scene && this.initWithDuration(t, scene);
+    },
+	_setAttrs: function(node, x, y) {
+		node.attr({
+			x: x,
+			y: y,
+			anchorX: 0.5,
+			anchorY: 0.5
+		});
+	},
+    onEnter:function () {
+        cc.TransitionScene.prototype.onEnter.call(this);
+        this._setupTransition();
+        var winSize = cc.director.getWinSize();
+        var texture = new cc.RenderTexture(winSize.width, winSize.height);
+        texture.sprite.anchorX = 0.5;
+	    texture.sprite.anchorY = 0.5;
+        this._setAttrs(texture, winSize.width / 2, winSize.height / 2);
+        texture.clear(0, 0, 0, 1);
+        texture.begin();
+        this._sceneToBeModified.visit();
+        texture.end();
+        if (this._sceneToBeModified === this._outScene)
+            this.hideOutShowIn();
+        var pNode = this._progressTimerNodeWithRenderTexture(texture);
+        var layerAction = cc.sequence(
+            cc.progressFromTo(this._duration, this._from, this._to),
+            cc.callFunc(this.finish, this));
+        pNode.runAction(layerAction);
+        this.addChild(pNode, 2, cc.SCENE_RADIAL);
+    },
+    onExit:function () {
+        this.removeChildByTag(cc.SCENE_RADIAL, true);
+        cc.TransitionScene.prototype.onExit.call(this);
+    },
+    _setupTransition:function () {
+        this._sceneToBeModified = this._outScene;
+        this._from = 100;
+        this._to = 0;
+    },
+    _progressTimerNodeWithRenderTexture:function (texture) {
+        cc.log("cc.TransitionProgress._progressTimerNodeWithRenderTexture(): should be overridden in subclass");
+        return null;
+    },
+    _sceneOrder:function () {
+        this._isInSceneOnTop = false;
+    }
+});
+cc.TransitionProgress.create = function (t, scene) {
+    return new cc.TransitionProgress(t, scene);
+};
+cc.TransitionProgressRadialCCW = cc.TransitionProgress.extend({
+    ctor:function (t, scene) {
+        cc.TransitionProgress.prototype.ctor.call(this);
+        scene && this.initWithDuration(t, scene);
+    },
+    _progressTimerNodeWithRenderTexture:function (texture) {
+        var size = cc.director.getWinSize();
+        var pNode = new cc.ProgressTimer(texture.sprite);
+        if (cc._renderType === cc._RENDER_TYPE_WEBGL)
+            pNode.sprite.flippedY = true;
+        pNode.type = cc.ProgressTimer.TYPE_RADIAL;
+        pNode.reverseDir = false;
+        pNode.percentage = 100;
+        this._setAttrs(pNode, size.width / 2, size.height / 2);
+        return pNode;
+    }
+});
+cc.TransitionProgressRadialCCW.create = function (t, scene) {
+    return new cc.TransitionProgressRadialCCW(t, scene);
+};
+cc.TransitionProgressRadialCW = cc.TransitionProgress.extend({
+    ctor:function (t, scene) {
+        cc.TransitionProgress.prototype.ctor.call(this);
+        scene && this.initWithDuration(t, scene);
+    },
+    _progressTimerNodeWithRenderTexture:function (texture) {
+        var size = cc.director.getWinSize();
+        var pNode = new cc.ProgressTimer(texture.sprite);
+        if (cc._renderType === cc._RENDER_TYPE_WEBGL)
+            pNode.sprite.flippedY = true;
+        pNode.type = cc.ProgressTimer.TYPE_RADIAL;
+        pNode.reverseDir = true;
+        pNode.percentage = 100;
+        this._setAttrs(pNode, size.width / 2, size.height / 2);
+        return pNode;
+    }
+});
+cc.TransitionProgressRadialCW.create = function (t, scene) {
+    var tempScene = new cc.TransitionProgressRadialCW();
+    if ((tempScene !== null) && (tempScene.initWithDuration(t, scene))) {
+        return tempScene;
+    }
+    return new cc.TransitionProgressRadialCW(t, scene);
+};
+cc.TransitionProgressHorizontal = cc.TransitionProgress.extend({
+    ctor:function (t, scene) {
+        cc.TransitionProgress.prototype.ctor.call(this);
+        scene && this.initWithDuration(t, scene);
+    },
+    _progressTimerNodeWithRenderTexture:function (texture) {
+        var size = cc.director.getWinSize();
+        var pNode = new cc.ProgressTimer(texture.sprite);
+        if (cc._renderType === cc._RENDER_TYPE_WEBGL)
+            pNode.sprite.flippedY = true;
+        pNode.type = cc.ProgressTimer.TYPE_BAR;
+        pNode.midPoint = cc.p(1, 0);
+        pNode.barChangeRate = cc.p(1, 0);
+        pNode.percentage = 100;
+        this._setAttrs(pNode, size.width / 2, size.height / 2);
+        return pNode;
+    }
+});
+cc.TransitionProgressHorizontal.create = function (t, scene) {
+    return new cc.TransitionProgressHorizontal(t, scene);
+};
+cc.TransitionProgressVertical = cc.TransitionProgress.extend({
+    ctor:function (t, scene) {
+        cc.TransitionProgress.prototype.ctor.call(this);
+        scene && this.initWithDuration(t, scene);
+    },
+    _progressTimerNodeWithRenderTexture:function (texture) {
+        var size = cc.director.getWinSize();
+        var pNode = new cc.ProgressTimer(texture.sprite);
+        if (cc._renderType === cc._RENDER_TYPE_WEBGL)
+            pNode.sprite.flippedY = true;
+        pNode.type = cc.ProgressTimer.TYPE_BAR;
+        pNode.midPoint = cc.p(0, 0);
+        pNode.barChangeRate = cc.p(0, 1);
+        pNode.percentage = 100;
+        this._setAttrs(pNode, size.width / 2, size.height / 2);
+        return pNode;
+    }
+});
+cc.TransitionProgressVertical.create = function (t, scene) {
+    return new cc.TransitionProgressVertical(t, scene);
+};
+cc.TransitionProgressInOut = cc.TransitionProgress.extend({
+    ctor:function (t, scene) {
+        cc.TransitionProgress.prototype.ctor.call(this);
+        scene && this.initWithDuration(t, scene);
+    },
+    _progressTimerNodeWithRenderTexture:function (texture) {
+        var size = cc.director.getWinSize();
+        var pNode = new cc.ProgressTimer(texture.sprite);
+        if (cc._renderType === cc._RENDER_TYPE_WEBGL)
+            pNode.sprite.flippedY = true;
+        pNode.type = cc.ProgressTimer.TYPE_BAR;
+        pNode.midPoint = cc.p(0.5, 0.5);
+        pNode.barChangeRate = cc.p(1, 1);
+        pNode.percentage = 0;
+        this._setAttrs(pNode, size.width / 2, size.height / 2);
+        return pNode;
+    },
+    _sceneOrder:function () {
+        this._isInSceneOnTop = false;
+    },
+    _setupTransition:function () {
+        this._sceneToBeModified = this._inScene;
+        this._from = 0;
+        this._to = 100;
+    }
+});
+cc.TransitionProgressInOut.create = function (t, scene) {
+    return new cc.TransitionProgressInOut(t, scene);
+};
+cc.TransitionProgressOutIn = cc.TransitionProgress.extend({
+    ctor:function (t, scene) {
+        cc.TransitionProgress.prototype.ctor.call(this);
+        scene && this.initWithDuration(t, scene);
+    },
+    _progressTimerNodeWithRenderTexture:function (texture) {
+        var size = cc.director.getWinSize();
+        var pNode = new cc.ProgressTimer(texture.sprite);
+        if (cc._renderType === cc._RENDER_TYPE_WEBGL)
+            pNode.sprite.flippedY = true;
+        pNode.type = cc.ProgressTimer.TYPE_BAR;
+        pNode.midPoint = cc.p(0.5, 0.5);
+        pNode.barChangeRate = cc.p(1, 1);
+        pNode.percentage = 100;
+        this._setAttrs(pNode, size.width / 2, size.height / 2);
+        return pNode;
+    }
+});
+cc.TransitionProgressOutIn.create = function (t, scene) {
+    return new cc.TransitionProgressOutIn(t, scene);
+};
+cc.TransitionPageTurn = cc.TransitionScene.extend({
+    ctor:function (t, scene, backwards) {
+        cc.TransitionScene.prototype.ctor.call(this);
+        this._gridProxy = new cc.NodeGrid();
+        this.initWithDuration(t, scene, backwards);
+    },
+    _back:true,
+    _gridProxy: null,
+    _className:"TransitionPageTurn",
+    initWithDuration:function (t, scene, backwards) {
+        this._back = backwards;
+        if (cc.TransitionScene.prototype.initWithDuration.call(this, t, scene)) {
+        }
+        return true;
+    },
+    actionWithSize:function (vector) {
+        if (this._back)
+            return cc.reverseTime(cc.pageTurn3D(this._duration, vector));
+        else
+            return cc.pageTurn3D(this._duration, vector);
+    },
+    onEnter:function () {
+        cc.TransitionScene.prototype.onEnter.call(this);
+        var winSize = cc.director.getWinSize();
+        var x, y;
+        if (winSize.width > winSize.height) {
+            x = 16;
+            y = 12;
+        } else {
+            x = 12;
+            y = 16;
+        }
+        var action = this.actionWithSize(cc.size(x, y)), gridProxy = this._gridProxy;
+        if (!this._back) {
+            gridProxy.setTarget(this._outScene);
+            gridProxy.onEnter();
+            gridProxy.runAction( cc.sequence(action,cc.callFunc(this.finish, this),cc.stopGrid()));
+        } else {
+            gridProxy.setTarget(this._inScene);
+            gridProxy.onEnter();
+            this._inScene.visible = false;
+            gridProxy.runAction(
+                cc.sequence(action, cc.callFunc(this.finish, this), cc.stopGrid())
+            );
+            this._inScene.runAction(cc.show());
+        }
+    },
+    visit: function(){
+        if(this._back)
+            this._outScene.visit();
+        else
+            this._inScene.visit();
+        this._gridProxy.visit();
+    },
+    _sceneOrder:function () {
+        this._isInSceneOnTop = this._back;
+    }
+});
+cc.TransitionPageTurn.create = function (t, scene, backwards) {
+    return new cc.TransitionPageTurn(t, scene, backwards);
+};
 cc.IMEKeyboardNotificationInfo = function (begin, end, duration) {
     this.begin = begin || cc.rect(0, 0, 0, 0);
     this.end = end || cc.rect(0, 0, 0, 0);

@@ -48,7 +48,7 @@
  */
 
 cc.game.onStart = function(){
-    var designWidth=520-16*5+10*2;
+    var designWidth=520-16*5+10*2;  //460
     var designHeight=650;
     cc.view.adjustViewPort(true);
     cc.view.setDesignResolutionSize(designWidth, designHeight, cc.ResolutionPolicy.FIXED_HEIGHT);
@@ -60,7 +60,7 @@ cc.game.onStart = function(){
     //load resources
     cc.LoaderScene.preload(g_resources, function () {
         cc.director.setProjection(cc.Director.PROJECTION_2D);
-        cc.director.runScene(new GamePlayScene());
+        cc.director.runScene(new WelcomeScene());
     }, this);
 };
 cc.game.run();

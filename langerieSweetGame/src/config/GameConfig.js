@@ -20,8 +20,10 @@ GC.size = 4;
 
 GC.startTiles = 2;
 
+GC.score=100;
+
 //GC.winValue = 2048;
-GC.winValue = 1024;
+GC.winValue = 16;
 
 GC.GAME_STATE = {
     PLAY: 1,

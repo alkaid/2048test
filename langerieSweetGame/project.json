@@ -13,10 +13,11 @@
     "jsList" : [
         "src/resource.js",
         "src/config/GameConfig.js",
-
+        "src/gamePlay/scene/Welcome.js",
         "src/gamePlay/scene/GamePlay.js",
         "src/gamePlay/layer/GPBackgroundLayer.js",
         "src/gamePlay/layer/GPTouchLayer.js",
+        "src/gamePlay/layer/ResultLayer.js",
         "src/gamePlay/sprite/TileSprite.js",
         "src/gamePlay/classes/Grid.js",
         "src/gamePlay/classes/Tile.js"

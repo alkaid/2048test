@@ -9,17 +9,17 @@ var GamePlayLayer = cc.Layer.extend({
     ctor : function(){
         this._super();
 
-        this.addCache();
+        //this.addCache();
         this.addBackgroundLayer();
         this.addTouchLayer();
     },
 
-    addCache : function(){
-
-        //将plist添加到缓存
-        cc.spriteFrameCache.addSpriteFrames(res.source_plist);
-        cc.spriteFrameCache.addSpriteFrames(res.nums_plist);
-    },
+    //addCache : function(){
+    //
+    //    //将plist添加到缓存
+    //    cc.spriteFrameCache.addSpriteFrames(res.source_plist);
+    //    cc.spriteFrameCache.addSpriteFrames(res.nums_plist);
+    //},
 
 
     addBackgroundLayer : function(){
