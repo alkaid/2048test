@@ -23,11 +23,131 @@ var GPTouchLayer = cc.Layer.extend({
 
         this.initScore();
 
-        this.initGame();
+        //this.initGame();
 
-        this.bindEvent();
+        this.initGuide();
+
+        //this.bindEvent();
 
     },
+
+    initGuide: function(){
+        var self=this;
+        //初始化新手指引
+        this.guideLayer=new cc.LayerColor(cc.color(0, 0, 0,150));
+        this.guideLayer.attr({
+            x: 0,
+            y: 0
+        });
+        this.addChild(this.guideLayer);
+        var guideTip1 = new cc.Sprite("#guide_tip1.png");
+        var tipLayer=new cc.LayerColor(cc.color(0, 0, 0,80));
+        tipLayer.attr({
+            x: 0,
+            y: GC.h-40*GC.wscale-guideTip1.getContentSize().height,
+            width:GC.w,
+            height:20*GC.wscale+guideTip1.getContentSize().height
+        });
+        guideTip1.attr({
+            x: GC.centerX,
+            y: tipLayer.getContentSize().height/2,
+        });
+        tipLayer.addChild(guideTip1);
+        this.guideLayer.addChild(tipLayer);
+        var guideTable = new cc.Sprite("#guide_table.png");
+        guideTable.attr({
+            x: GC.centerX,
+            y: GC.gridBg.getPositionY()+GC.gridWidth/4
+        });
+        this.guideLayer.addChild(guideTable);
+        var num1= new cc.Sprite("#2.png");
+        var num2= new cc.Sprite("#2.png");
+        var num3= new cc.Sprite("#4.png");
+        num1.attr({
+            x:guideTable.getContentSize().width/8,
+            y:guideTable.getContentSize().height*5/8,
+            scale:0.8
+        });
+        num2.attr({
+            x:guideTable.getContentSize().width*5/8+8*GC.wscale,
+            y:guideTable.getContentSize().height*5/8,
+            scale:0.8
+        });
+        num3.attr({
+            x:guideTable.getContentSize().width*5/8+8*GC.wscale,
+            y:guideTable.getContentSize().height*5/8,
+            scale:0.8,
+            visible:false
+        });
+        guideTable.addChild(num1);
+        guideTable.addChild(num2);
+        guideTable.addChild(num3);
+        var guideFingure= new cc.Sprite("#guide_fingure.png");
+        guideFingure.attr({
+            x: GC.centerX-guideTable.getContentSize().width/2,
+            y: guideTable.getPositionY()-guideTable.getContentSize().height/2+10*GC.wscale
+        });
+        this.guideLayer.addChild(guideFingure);
+        var actionMove = cc.moveTo(1, cc.p(guideFingure.getPositionX()+200*GC.wscale, guideFingure.getPositionY()));
+        var seqAction = cc.sequence(cc.delayTime(0.4),actionMove, cc.callFunc(function () {
+            var actionTo = cc.moveTo(0.5, num2.getPosition());
+            num1.stopAllActions();
+            num1.runAction(cc.sequence(actionTo, cc.callFunc(function () {
+                num1.setVisible(false);
+                num2.setVisible(false);
+                num3.setVisible(true);
+                var actionZoomIn, actionZoomOut;
+                actionZoomIn = cc.scaleTo(0.1, 1.0, 1.0);
+                actionZoomOut = cc.scaleTo(0.1, 0.8, 0.8);
+                num3.runAction(cc.sequence(actionZoomIn, actionZoomOut,cc.delayTime(0.5),cc.callFunc(function () {
+                    num3.setScale(0.8);
+                    num3.setVisible(false);
+                    num1.setPositionX(guideTable.getContentSize().width/8);
+                    num1.setVisible(true);
+                    num2.setVisible(true);
+                    guideFingure.setPositionX(GC.centerX-guideTable.getContentSize().width/2);
+                })));
+
+            })));
+
+        }),cc.delayTime(1.5));
+        var repAct=cc.repeatForever(seqAction);
+        guideFingure.runAction(repAct);
+        //初始化开始游戏按钮
+        this.btnGoOn = new cc.Sprite("#btn_go_on.png");
+        this.btnGoOn.attr({
+            x: GC.centerX,
+            y: this.btnGoOn.getContentSize().height/2
+        });
+        this.guideLayer.addChild(this.btnGoOn);
+        //点击开始游戏按钮
+        cc.eventManager.addListener({
+            event: cc.EventListener.TOUCH_ONE_BY_ONE,
+            swallowTouches: true,
+            onTouchBegan: function (touch, event) {
+                var target = event.getCurrentTarget(),
+                    locationInNode = target.convertToNodeSpace(touch.getLocation()),
+                    s = target.getContentSize(),
+                    rect = cc.rect(0, 0, s.width, s.height);
+
+                if (cc.rectContainsPoint(rect, locationInNode)) {
+                    return true;
+                }
+                return false;
+            },
+            onTouchMoved: function (touch, event) {
+
+            },
+            onTouchEnded: function (touch, event) {
+                //移除新手指引
+                self.removeChild(self.guideLayer);
+                //开始游戏
+                self.initGame();
+                self.bindEvent();
+            }
+        }, this.btnGoOn);
+    },
+
     initGame: function () {
 
         this.state = GC.GAME_STATE.PLAY;

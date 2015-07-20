@@ -81,6 +81,7 @@ var GPBackgroundLayer = cc.LayerColor.extend({
             height: GC.gridWidth
         });
         this.addChild(gridBg);
+        GC.gridBg=gridBg;
 
 
         //创建tile背景
