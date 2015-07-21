@@ -31,7 +31,7 @@ var GPBackgroundLayer = cc.LayerColor.extend({
         //    height: GC.h
         //});
         //this.addChild(bg);
-        bg = cc.Sprite.create("res/source/bg.png");
+        bg = cc.Sprite.create(res.main_bg);
         bg.attr({
             x:  GC.centerX,
             y:  GC.centerY

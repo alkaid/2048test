@@ -11,7 +11,7 @@ var ResultLayer = cc.Layer.extend({
 
     initBackground: function () {
         //整体背景
-        var bg =  new cc.Sprite("res/source/welcome_bg.jpg");
+        var bg =  new cc.Sprite(res.welcome_bg);
         bg.attr({
             x:  GC.centerX,
             y:  GC.centerY
@@ -44,14 +44,14 @@ var ResultLayer = cc.Layer.extend({
         });
         this.addChild(scorebg);
 
-        var lbScore = new ccui.Text();
+        var lbScore = new ccui.TextBMFont();
+        lbScore.setFntFile(res.fnt_numbers);
         lbScore.attr({
             x: scorebg.getPositionX(),
             y: scorebg.getPositionY()-14*GC.wscale,
             textAlign: cc.TEXT_ALIGNMENT_CENTER,
             text: "1000",
-            color: cc.color(10, 10, 10),
-            font: "26px AmericanTypewriter"
+            color: cc.color(10, 10, 10)
         });
         this.addChild(lbScore);
         lbScore.string = GC.score.toString();
@@ -84,16 +84,19 @@ var ResultLayer = cc.Layer.extend({
     },
 
     onStartGame:function (pSender) {
+        cc.audioEngine.playEffect(res.audio_UI_Click);
         var scene = new GamePlayScene();
         cc.director.runScene(new cc.TransitionFade(1.2, scene));
     },
 
     onGetPrize:function (pSender) {
         console.log("onGetPrize");
+        cc.audioEngine.playEffect(res.audio_UI_Click);
     },
 
     onShareResult:function (pSender) {
         console.log("onShareResult");
+        cc.audioEngine.playEffect(res.audio_UI_Click);
     }
 });
 
@@ -104,5 +107,8 @@ var ResultScene  = cc.Scene.extend({
         var layer = new ResultLayer();
         this.addChild(layer);
 
+        cc.audioEngine.playEffect(res.audio_star);
+        cc.audioEngine.playEffect(res.audio_star);
+        cc.audioEngine.playEffect(res.audio_star);
     }
 });

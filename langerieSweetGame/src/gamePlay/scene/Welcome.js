@@ -12,7 +12,8 @@ var WelcomeLayer = cc.Layer.extend({
     },
 
     addCache : function(){
-
+        //音效
+        cc.audioEngine.playMusic(res.audio_loop,true);
         //将plist添加到缓存
         cc.spriteFrameCache.addSpriteFrames(res.source_plist);
         cc.spriteFrameCache.addSpriteFrames(res.nums_plist);
@@ -20,7 +21,7 @@ var WelcomeLayer = cc.Layer.extend({
 
     initBackground: function () {
         //整体背景
-        var bg = cc.Sprite.create("res/source/welcome_bg.jpg");
+        var bg = cc.Sprite.create(res.welcome_bg);
         bg.attr({
             x:  GC.centerX,
             y:  GC.centerY
@@ -62,6 +63,7 @@ var WelcomeLayer = cc.Layer.extend({
 
     onStartGame:function (pSender) {
         console.log('onStartGame');
+        cc.audioEngine.playEffect(res.audio_UI_Click);
         var scene = new GamePlayScene();
         cc.director.runScene(new cc.TransitionFade(1.2, scene));
     },

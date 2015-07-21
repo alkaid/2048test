@@ -139,6 +139,7 @@ var GPTouchLayer = cc.Layer.extend({
 
             },
             onTouchEnded: function (touch, event) {
+                cc.audioEngine.playEffect(res.audio_UI_Click);
                 //移除新手指引
                 self.removeChild(self.guideLayer);
                 //开始游戏
@@ -179,40 +180,41 @@ var GPTouchLayer = cc.Layer.extend({
         this.btnRetry = new cc.Sprite("#resetBtn_over.png");
         this.btnRetry.attr({
             x: GC.w - 60,
-            y: GC.h - 104
+            y: GC.h - 104,
+            visible:false
         });
         this.addChild(this.btnRetry);
     },
     initScore: function () {
-        this.lbScore = new ccui.Text();
+        this.lbScore = new ccui.TextBMFont();
+        this.lbScore.setFntFile(res.fnt_numbers);
         this.lbScore.attr({
             x: GC.scorebar.getPositionX()+5,
             y: GC.scorebar.getPositionY()-5,
             textAlign: cc.TEXT_ALIGNMENT_CENTER,
             text: this.score,
-            color: cc.color(10, 10, 10),
-            font: "26px AmericanTypewriter"
+            color: cc.color(10, 10, 10)
         });
         this.addChild(this.lbScore);
 
-        this.lbAdd = new ccui.Text();
+        this.lbAdd = new ccui.TextBMFont();
+        this.lbAdd.setFntFile(res.fnt_numbers);
         this.lbAdd.attr({
             x: this.lbScore.getPositionX(),
             y: this.lbScore.getPositionY()-2,
             textAlign: cc.TEXT_ALIGNMENT_CENTER,
-            font: "22px AmericanTypewriter",
             color: cc.color(10, 10, 10),
-            visble: false
+            visible: false
         });
         this.addChild(this.lbAdd);
 
-        this.lbBest = new ccui.Text();
+        this.lbBest = new ccui.TextBMFont();
+        this.lbBest.setFntFile(res.fnt_numbers);
         this.lbBest.attr({
             x: GC.w - 58*GC.wscale  ,
             y: GC.h - 52,
             textAlign: cc.TEXT_ALIGNMENT_CENTER,
-            string: this.best,
-            font: "26px AmericanTypewriter"
+            string: this.best
         });
         this.lbBest.setVisible(false);
         this.addChild(this.lbBest);
@@ -224,6 +226,7 @@ var GPTouchLayer = cc.Layer.extend({
         }
     },
     addRandomTile: function () {
+        cc.audioEngine.playEffect(res.audio_appear2);
         var value, tile;
         if (this.grid.cellsAvailable()) {
             value = Math.random() * 0.9 ? 2 : 4;
@@ -267,6 +270,7 @@ var GPTouchLayer = cc.Layer.extend({
                 tileFrom.destroy();
                 self.texNumsBatch.removeChild(tileFrom);
                 tileTo.setValue(tile.value);
+                cc.audioEngine.playEffect(res.audio_appear1);
                 tileTo.playScale(true);
             });
 
@@ -390,6 +394,8 @@ var GPTouchLayer = cc.Layer.extend({
 
         // Save the current tile positions and remove merger information
         this.prepareTiles();
+
+        cc.audioEngine.playEffect(res.audio_slide);
 
         // Traverse the grid in the right direction and move tiles
         traversals.x.forEach(function (x) {
@@ -578,9 +584,11 @@ var GPTouchLayer = cc.Layer.extend({
         });
         this.addChild(this.resultWin);
         if(this.won){
+            cc.audioEngine.playEffect(res.audio_starappear);
             var scene = new ResultScene();
             cc.director.runScene(new cc.TransitionFade(1.2, scene));
         }else{
+            cc.audioEngine.playEffect(res.audio_lost);
             this.lbResult = new cc.Sprite(this.won ? "#result_success.png" : "#result_failed.png");
             this.lbResult.attr({
                 x: GC.w_2,

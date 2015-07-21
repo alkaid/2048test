@@ -58,7 +58,8 @@ cc.game.onStart = function(){
     console.log(GC.w+" "+GC.h);
     cc.director.setContentScaleFactor(1/GC.wscale);
     //load resources
-    cc.LoaderScene.preload(g_resources, function () {
+    //cc.LoaderScene.preload(g_resources, function () {
+    LoaderScene.preload(g_resources, function () {
         cc.director.setProjection(cc.Director.PROJECTION_2D);
         cc.director.runScene(new WelcomeScene());
     }, this);
