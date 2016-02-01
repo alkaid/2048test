@@ -7,6 +7,22 @@ var ResultLayer = cc.Layer.extend({
     ctor : function(){
         this._super();
         this.initBackground();
+        this.bindEvent();
+    },
+
+    bindEvent: function(){
+        cc.eventManager.addListener({
+            event: cc.EventListener.TOUCH_ONE_BY_ONE,
+            swallowTouches: true,
+            onTouchBegan: function (touch, event) {
+                return true;
+            },
+            onTouchMoved: function (touch, event) {
+
+            },
+            onTouchEnded: function (touch, event) {
+            }
+        }, this);
     },
 
     initBackground: function () {
@@ -97,6 +113,7 @@ var ResultLayer = cc.Layer.extend({
     onShareResult:function (pSender) {
         console.log("onShareResult");
         cc.audioEngine.playEffect(res.audio_UI_Click);
+        this.removeFromParent();
     }
 });
 

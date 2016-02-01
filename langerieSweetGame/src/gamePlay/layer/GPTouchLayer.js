@@ -572,7 +572,7 @@ var GPTouchLayer = cc.Layer.extend({
     },
     gameOver: function () {
         GC.score=this.score;
-        this.state = GC.GAME_STATE.OVER;
+        this.state = GC.GAME_STATE.PAUSE;
 
         this.resultWin = new cc.Scale9Sprite("background.png");
         this.resultWin.attr({
@@ -585,9 +585,12 @@ var GPTouchLayer = cc.Layer.extend({
         this.addChild(this.resultWin);
         if(this.won){
             cc.audioEngine.playEffect(res.audio_starappear);
-            var scene = new ResultScene();
-            cc.director.runScene(new cc.TransitionFade(1.2, scene));
+            //var scene = new ResultScene();
+            //cc.director.runScene(new cc.TransitionFade(1.2, scene));
+            var resultLayer=new ResultLayer();
+            this.addChild(resultLayer);
         }else{
+            this.state = GC.GAME_STATE.OVER;
             cc.audioEngine.playEffect(res.audio_lost);
             this.lbResult = new cc.Sprite(this.won ? "#result_success.png" : "#result_failed.png");
             this.lbResult.attr({

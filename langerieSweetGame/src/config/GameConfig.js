@@ -23,12 +23,15 @@ GC.startTiles = 2;
 GC.score=100;
 
 //GC.winValue = 2048;
-GC.winValue = 1024;
-//GC.winValue = 16;
+//GC.winValue = 1024;
+GC.winValue = 16;
+GC.winCardValue=[256,512,1024];
 
 GC.GAME_STATE = {
     PLAY: 1,
-    OVER: 2
+    OVER: 2,
+    PAUSE:3,
+    RESUME:4
 };
 
 GC.KEY_MAP = {
