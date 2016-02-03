@@ -151,6 +151,8 @@ var GPTouchLayer = cc.Layer.extend({
 
     initGame: function () {
 
+        GC.currentTargetCardValueIndex=0;
+
         this.state = GC.GAME_STATE.PLAY;
 
         this.won = false;
@@ -425,8 +427,16 @@ var GPTouchLayer = cc.Layer.extend({
                         score += merged.value;
 
                         // The mighty 2048 tile
-                        if (merged.value === GC.winValue) {
+                        for(var i=0;i<GC.winCardValue.length;i++){
+                            if(GC.winCardValue[i]==merged.value){
+
+                            }
+                        }
+                        if (merged.value === GC.winCardValue[GC.currentTargetCardValueIndex]) {
+                            GC.currentTargetCardValueIndex++;
+                        //if (merged.value === GC.winValue) {
                             self.won = true;
+                            console.log("win game");
                             self.gameOver();
                         }
                     } else {
@@ -444,6 +454,8 @@ var GPTouchLayer = cc.Layer.extend({
             this.addRandomTile();
 
             if (!this.movesAvailable()) {
+                console.log("lose game");
+                self.won=false;
                 this.gameOver();
             }
             if (score > 0) {
@@ -570,6 +582,12 @@ var GPTouchLayer = cc.Layer.extend({
         }
         this.initGame();
     },
+    //继续游戏的回调
+    onReturnGame: function(){
+        if(!this.won){
+            this.retestGame();
+        }
+    },
     gameOver: function () {
         GC.score=this.score;
         this.state = GC.GAME_STATE.PAUSE;
@@ -588,6 +606,7 @@ var GPTouchLayer = cc.Layer.extend({
             //var scene = new ResultScene();
             //cc.director.runScene(new cc.TransitionFade(1.2, scene));
             var resultLayer=new ResultLayer();
+            resultLayer.setGPTouchLayer(this);
             this.addChild(resultLayer);
         }else{
             this.state = GC.GAME_STATE.OVER;

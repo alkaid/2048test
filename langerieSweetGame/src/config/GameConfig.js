@@ -25,7 +25,11 @@ GC.score=100;
 //GC.winValue = 2048;
 //GC.winValue = 1024;
 GC.winValue = 16;
-GC.winCardValue=[256,512,1024];
+//卡券奖励目标
+GC.winCardValue=[64,512,1024];
+//GC.winCardValue=[16,32,64];
+//当前卡券奖励目标索引
+GC.currentTargetCardValueIndex=0;
 
 GC.GAME_STATE = {
     PLAY: 1,

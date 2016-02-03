@@ -85,18 +85,30 @@ var ResultLayer = cc.Layer.extend({
             y: scorebg.getPositionY()-scorebg.getContentSize().height/2-btnGetPrize.getContentSize().height/2-40*GC.wscale
         });
 
-        var btnShare = new cc.MenuItemImage("#btn_result_share.png","#btn_result_share.png",this.onShareResult, this);
-        btnShare.attr({
-            x: btnGetPrize.getPositionX()+btnGetPrize.getContentSize().width/2+btnShare.getContentSize().width/2+20,
-            y: btnGetPrize.getPositionY()
-        });
+        var haveReturnGame=GC.currentTargetCardValueIndex<3;
+        if(haveReturnGame) {
+            var btnReturnGame = new cc.MenuItemImage("#btn_return_game.png", "#btn_return_game.png", this.onReturnGame, this);
+            btnReturnGame.attr({
+                x: btnGetPrize.getPositionX() + btnGetPrize.getContentSize().width / 2 + btnReturnGame.getContentSize().width / 2 + 10,
+                y: btnGetPrize.getPositionY() + 3
+            });
+            var menu = cc.Menu.create(btnGetPrize,btnReturnGame);
+        }else{
+            var menu = cc.Menu.create(btnGetPrize);
+        }
 
 
-        var menu = cc.Menu.create(btnGetPrize,btnShare);
+
+        //var btnShare = new cc.MenuItemImage("#btn_result_share.png","#btn_result_share.png",this.onShareResult, this);
+        //btnShare.attr({
+        //    x: btnReturnGame.getPositionX()+btnReturnGame.getContentSize().width/2+btnShare.getContentSize().width/2+20,
+        //    y: btnReturnGame.getPositionY()
+        //});
         menu.attr({
             x:0,y:0
         });
         this.addChild(menu);
+        GC.aa=btnReturnGame;
     },
 
     onStartGame:function (pSender) {
@@ -105,15 +117,32 @@ var ResultLayer = cc.Layer.extend({
         cc.director.runScene(new cc.TransitionFade(1.2, scene));
     },
 
+    onReturnGame:function (pSender) {
+        console.log("onReturnGame");
+        cc.audioEngine.playEffect(res.audio_UI_Click);
+        this.removeFromParent();
+        if(this.gpTouchLayer){
+            this.gpTouchLayer.onReturnGame();
+        }
+    },
+
     onGetPrize:function (pSender) {
         console.log("onGetPrize");
         cc.audioEngine.playEffect(res.audio_UI_Click);
+        if(GC.currentTargetCardValueIndex<=0){
+            alert("未达到获取奖励的条件");
+        }else{
+            location.href="http://weixin.maniform.cn/wei/plt/wengine/index.php?s=/addon/LangerieCard1/LangerieCardPublic/lanSweetGamePrize/id/110/mpid/110/prize/"+(GC.currentTargetCardValueIndex)+'.html';
+        }
     },
 
     onShareResult:function (pSender) {
         console.log("onShareResult");
         cc.audioEngine.playEffect(res.audio_UI_Click);
-        this.removeFromParent();
+    },
+
+    setGPTouchLayer:function(gpTouchLayer){
+        this.gpTouchLayer=gpTouchLayer;
     }
 });
 
