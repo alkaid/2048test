@@ -572,10 +572,6 @@ var GPTouchLayer = cc.Layer.extend({
     },
     retestGame: function () {
         this.texNumsBatch.removeAllChildren();
-        if (this.resultWin) {
-            this.removeChild(this.resultWin);
-            this.resultWin = null;
-        }
         if (this.lbResult) {
             this.removeChild(this.lbResult);
             this.lbResult = null;
@@ -584,6 +580,10 @@ var GPTouchLayer = cc.Layer.extend({
     },
     //继续游戏的回调
     onReturnGame: function(){
+        if (this.resultWin) {
+            this.removeChild(this.resultWin);
+            this.resultWin = null;
+        }
         if(!this.won){
             this.retestGame();
         }
